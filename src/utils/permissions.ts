@@ -21,6 +21,8 @@ const PERMISSION_INCLUDES: Record<string, string[]> = {
   'admins:write': ['admins:read'],
   'api_logger:write': ['api_logger:read'],
   'client_providers:write': ['client_providers:read'],
+  'app_versions:write': ['app_versions:read'],
+  'credit_exchange:write': ['credit_exchange:read'],
 };
 
 /**
@@ -115,6 +117,8 @@ export const RESOURCE_PERMISSIONS: Record<string, string[]> = {
   'client-providers': ['client_providers:read'],
   'hahachat-providers': ['hahachat_providers:read'],
   'web-search': ['web_search:read'],
+  'app-versions': ['app_versions:read'],
+  'credit-exchange': ['credit_exchange:read'],
 };
 
 /**
@@ -129,6 +133,11 @@ export function canAccessResource(
   resourceName: string,
   userRole?: string
 ): boolean {
+  // 超级管理员有所有权限
+  if (userRole === 'super_admin') {
+    return true;
+  }
+  
   const requiredPermissions = RESOURCE_PERMISSIONS[resourceName];
   if (!requiredPermissions || requiredPermissions.length === 0) {
     // 如果没有定义权限要求，默认允许访问

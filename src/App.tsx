@@ -20,6 +20,7 @@ import { SubscriptionPlanList } from './pages/Subscriptions/SubscriptionPlanList
 import { SubscriptionPlanShow } from './pages/Subscriptions/SubscriptionPlanShow';
 import { SubscriptionPlanCreate } from './pages/Subscriptions/SubscriptionPlanCreate';
 import { SubscriptionPlanEdit } from './pages/Subscriptions/SubscriptionPlanEdit';
+import { SubscriptionPlanImportExport } from './pages/Subscriptions/SubscriptionPlanImportExport';
 
 
 // AI Models
@@ -65,6 +66,12 @@ import { HahachatProviderImport } from './pages/HahachatProviders/HahachatProvid
 // Web Search
 import { WebSearchConfig } from './pages/WebSearch/WebSearchConfig';
 
+// App Versions
+import { AppVersionManagement } from './pages/AppVersions/AppVersionManagement';
+
+// Credit Exchange
+import { CreditExchangeManagement } from './pages/CreditExchange/CreditExchangeManagement';
+
 // Profile
 import { ChangePassword } from './pages/Profile/ChangePassword';
 
@@ -79,6 +86,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import CloudIcon from '@mui/icons-material/Cloud';
 import SearchIcon from '@mui/icons-material/Search';
+import SystemUpdateIcon from '@mui/icons-material/SystemUpdate';
 
 function App() {
   // 调试信息：确认 App 组件已渲染
@@ -190,8 +198,11 @@ function App() {
         <Route path="/ai-models-import-export" element={<AIModelImportExport />} />
         <Route path="/client-providers-import" element={<ClientProviderImport />} />
         <Route path="/hahachat-providers/import" element={<HahachatProviderImport />} />
+        <Route path="/subscription-plans-import-export" element={<SubscriptionPlanImportExport />} />
         <Route path="/profile/change-password" element={<ChangePassword />} />
         <Route path="/web-search/config" element={<WebSearchConfig />} />
+        <Route path="/credit-exchange" element={<CreditExchangeManagement />} />
+        <Route path="/app-versions" element={<AppVersionManagement />} />
       </CustomRoutes>
     </Admin>
   );

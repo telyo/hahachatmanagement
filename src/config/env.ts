@@ -8,7 +8,7 @@ export type Environment = 'local' | 'staging' | 'production';
 // 环境配置映射
 const ENV_CONFIG: Record<Environment, { apiBaseUrl: string }> = {
   local: {
-    apiBaseUrl: 'http://localhost:8080',
+    apiBaseUrl: 'http://192.168.2.149:8080',
   },
   staging: {
     apiBaseUrl: 'https://api-test.hahachat.ai',

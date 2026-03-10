@@ -3,51 +3,103 @@ import {
   SimpleShowLayout,
   TextField,
   DateField,
-  Edit,
-  SimpleForm,
-  SelectInput,
-  TextInput,
+  FunctionField,
   useNotify,
   useRefresh,
+  useUpdate,
+  useRecordContext,
 } from 'react-admin';
+import { FormControl, InputLabel, Select, MenuItem, Box, Typography } from '@mui/material';
 import { formatUtils } from '../../utils/format';
-import apiClient from '../../services/api';
 
-const FeedbackShow = () => {
+const TYPE_LABELS: Record<string, string> = {
+  suggestion: '建议',
+  bug: 'Bug',
+  complaint: '投诉',
+};
+
+function StatusEdit() {
+  const record = useRecordContext();
   const notify = useNotify();
   const refresh = useRefresh();
+  const [update, { isLoading }] = useUpdate();
 
-  const handleUpdate = async (data: any) => {
+  if (!record?.id) return null;
+
+  const handleChange = async (event: any) => {
+    const newStatus = event.target.value;
     try {
-      await apiClient.put(`/admin/feedback/${data.id}`, {
-        status: data.status,
-        adminReply: data.adminReply,
+      await update('feedback', {
+        id: record.id,
+        data: { status: newStatus },
+        previousData: record,
       });
-      notify('反馈更新成功', { type: 'success' });
+      notify('状态已更新', { type: 'success' });
       refresh();
-    } catch (error: any) {
-      notify(error.response?.data?.message || '更新失败', { type: 'error' });
+    } catch (e: any) {
+      notify(e?.message || '更新失败', { type: 'error' });
     }
   };
 
   return (
-    <Show>
-      <SimpleShowLayout>
-        <TextField source="id" label="反馈ID" />
-        <TextField source="userId" label="用户ID" />
-        <TextField source="type" label="类型" />
-        <TextField source="category" label="分类" />
-        <TextField source="title" label="标题" />
-        <TextField source="content" label="内容" />
-        <TextField source="status" label="状态" format={(status) => formatUtils.status(status)} />
-        <TextField source="adminReply" label="管理员回复" />
-        <DateField source="createdAt" label="创建时间" showTime />
-        <DateField source="updatedAt" label="更新时间" showTime />
-        <DateField source="repliedAt" label="回复时间" showTime />
-      </SimpleShowLayout>
-    </Show>
+    <FormControl size="small" sx={{ minWidth: 160 }} disabled={isLoading}>
+      <InputLabel>状态</InputLabel>
+      <Select
+        value={record.status || 'pending'}
+        label="状态"
+        onChange={handleChange}
+      >
+        <MenuItem value="pending">{formatUtils.status('pending')}</MenuItem>
+        <MenuItem value="processing">{formatUtils.status('processing')}</MenuItem>
+        <MenuItem value="resolved">{formatUtils.status('resolved')}</MenuItem>
+        <MenuItem value="closed">{formatUtils.status('closed')}</MenuItem>
+      </Select>
+    </FormControl>
   );
-};
+}
+
+function DeviceInfoShow() {
+  const record = useRecordContext();
+  if (!record) return null;
+  const parts = [
+    record.deviceType && `设备类型: ${record.deviceType}`,
+    record.deviceModel && `型号: ${record.deviceModel}`,
+    record.osVersion && `系统: ${record.osVersion}`,
+  ].filter(Boolean);
+  return (
+    <Typography variant="body2">
+      {parts.length ? parts.join(' | ') : '—'}
+    </Typography>
+  );
+}
+
+const FeedbackShow = () => (
+  <Show>
+    <SimpleShowLayout>
+      <TextField
+        source="type"
+        label="类型"
+        format={(v: string) => TYPE_LABELS[v] ?? v ?? '—'}
+      />
+      <TextField source="title" label="标题" />
+      <TextField source="content" label="内容" fullWidth />
+      <FunctionField
+        label="设备信息"
+        render={() => <DeviceInfoShow />}
+      />
+      <TextField source="appVersion" label="版本信息" emptyText="—" />
+      <DateField source="createdAt" label="创建时间" showTime />
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ width: 120 }}>
+          状态
+        </Typography>
+        <StatusEdit />
+      </Box>
+      <TextField source="adminReply" label="管理员回复" fullWidth />
+      <DateField source="repliedAt" label="回复时间" showTime />
+      <DateField source="updatedAt" label="更新时间" showTime />
+    </SimpleShowLayout>
+  </Show>
+);
 
 export default FeedbackShow;
-

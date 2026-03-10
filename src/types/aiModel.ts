@@ -9,8 +9,7 @@ export interface AIModel {
   type: 'chat' | 'image' | 'audio' | 'video' | 'embedding';
   status: 'active' | 'inactive';
   pricing: {
-    inputPrice: number; // 每1000 tokens
-    outputPrice: number; // 每1000 tokens
+    creditsPerRequest: number; // 每次对话消耗的积分
   };
   capabilities: {
     maxTokens?: number;
@@ -19,13 +18,10 @@ export interface AIModel {
     supportsVision: boolean;
   };
   permissions: {
-    requiresSubscription: boolean;
-    allowedPlans?: string[];
-    minCredits?: number;
+    category: 'common' | 'exclusive' | 'embedding';
   };
   displayConfig: {
     sortOrder: number;
-    isFeatured: boolean;
     icon?: string;
   };
   createdAt: string;

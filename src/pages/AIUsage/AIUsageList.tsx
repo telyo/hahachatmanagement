@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   List,
   Datagrid,
@@ -11,7 +11,7 @@ import {
   TopToolbar,
   ExportButton,
 } from 'react-admin';
-import { Box, Card, CardContent, Typography, Grid, CircularProgress } from '@mui/material';
+import { Box, Card, CardContent, Typography, Grid, CircularProgress, ButtonGroup, Button, Alert } from '@mui/material';
 import { aiUsageService, AIUsageStatistics } from '../../services/aiUsage';
 import { formatUtils } from '../../utils/format';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
@@ -25,16 +25,37 @@ const AIUsageFilter = (props: any) => (
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
+const AIUsageEmpty = () => (
+  <Box sx={{ p: 3, textAlign: 'center' }}>
+    <Alert severity="info">该时间段内暂无使用记录</Alert>
+  </Box>
+);
+
 export const AIUsageList = () => {
   const [statistics, setStatistics] = useState<AIUsageStatistics | null>(null);
   const [loading, setLoading] = useState(true);
+  const [dateRange, setDateRange] = useState<'today' | '7d' | '30d'>('7d');
   const notify = useNotify();
+
+  const { startTime, endTime } = useMemo(() => {
+    const end = new Date();
+    const endMs = end.getTime();
+    let startMs: number;
+    if (dateRange === 'today') {
+      startMs = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 0, 0, 0).getTime();
+    } else if (dateRange === '7d') {
+      startMs = endMs - 7 * 24 * 60 * 60 * 1000;
+    } else {
+      startMs = endMs - 30 * 24 * 60 * 60 * 1000;
+    }
+    return { startTime: startMs, endTime: endMs };
+  }, [dateRange]);
 
   useEffect(() => {
     const fetchStatistics = async () => {
       try {
         setLoading(true);
-        const response = await aiUsageService.getStatistics();
+        const response = await aiUsageService.getStatistics({ startTime, endTime });
         setStatistics(response.data);
       } catch (error: any) {
         console.error('获取统计信息失败:', error);
@@ -46,7 +67,7 @@ export const AIUsageList = () => {
     };
 
     fetchStatistics();
-  }, [notify]);
+  }, [notify, startTime, endTime]);
 
   return (
     <>
@@ -56,6 +77,19 @@ export const AIUsageList = () => {
         </Box>
       ) : statistics && (
         <Box sx={{ p: 3 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+            <ButtonGroup size="small" variant="outlined">
+              <Button color={dateRange === 'today' ? 'primary' : 'inherit'} onClick={() => setDateRange('today')}>
+                今日
+              </Button>
+              <Button color={dateRange === '7d' ? 'primary' : 'inherit'} onClick={() => setDateRange('7d')}>
+                最近7天
+              </Button>
+              <Button color={dateRange === '30d' ? 'primary' : 'inherit'} onClick={() => setDateRange('30d')}>
+                最近30天
+              </Button>
+            </ButtonGroup>
+          </Box>
           <Grid container spacing={3} sx={{ mb: 3 }}>
             <Grid item xs={12} md={4}>
               <Card>
@@ -81,9 +115,9 @@ export const AIUsageList = () => {
               <Card>
                 <CardContent>
                   <Typography color="textSecondary" gutterBottom variant="body2">
-                    总成本
+                    总成本（积分）
                   </Typography>
-                  <Typography variant="h4">{formatUtils.currency(statistics.totalCost)}</Typography>
+                  <Typography variant="h4">{formatUtils.number(statistics.totalCost)} 积分</Typography>
                 </CardContent>
               </Card>
             </Grid>
@@ -145,21 +179,22 @@ export const AIUsageList = () => {
 
       <List
         filters={<AIUsageFilter />}
+        filter={{ startTime, endTime }}
         actions={
           <TopToolbar>
             <ExportButton />
           </TopToolbar>
         }
         title="AI 使用记录"
+        empty={<AIUsageEmpty />}
       >
         <Datagrid>
-          <TextField source="id" label="记录ID" />
           <TextField source="userId" label="用户ID" />
           <TextField source="modelName" label="模型名称" />
           <NumberField source="inputTokens" label="输入Tokens" />
           <NumberField source="outputTokens" label="输出Tokens" />
           <NumberField source="totalTokens" label="总Tokens" />
-          <NumberField source="cost" label="成本" options={{ style: 'currency', currency: 'USD' }} />
+          <NumberField source="cost" label="成本（积分）" />
           <DateField source="createdAt" label="时间" showTime />
         </Datagrid>
       </List>

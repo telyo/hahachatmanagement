@@ -55,22 +55,27 @@ export const AIModelEdit = () => {
       }
       
       // 处理 providers：确保格式为 [{ providerId, sortOrder }]
-      if (modelData.providers && Array.isArray(modelData.providers)) {
-        modelData.providers = modelData.providers.map((item: any, index: number) => {
-          if (typeof item === 'string') {
-            return { providerId: item, sortOrder: index };
-          }
-          if (typeof item === 'object' && item !== null) {
-            return {
-              providerId: item.providerId || item.id,
-              sortOrder: item.sortOrder !== undefined ? item.sortOrder : index,
-            };
-          }
-          return null;
-        }).filter((item: any) => item !== null && item.providerId);
-      } else {
-        modelData.providers = [];
+      // 注意：即使 providers 为空数组，也应该保留（表示清空所有提供商）
+      if (modelData.providers !== undefined) {
+        if (Array.isArray(modelData.providers) && modelData.providers.length > 0) {
+          modelData.providers = modelData.providers.map((item: any, index: number) => {
+            if (typeof item === 'string') {
+              return { providerId: item, sortOrder: index };
+            }
+            if (typeof item === 'object' && item !== null) {
+              return {
+                providerId: item.providerId || item.id,
+                sortOrder: item.sortOrder !== undefined ? item.sortOrder : index,
+              };
+            }
+            return null;
+          }).filter((item: any) => item !== null && item.providerId);
+        } else {
+          // 如果 providers 为空数组，保留空数组（表示清空所有提供商）
+          modelData.providers = [];
+        }
       }
+      // 如果 providers 字段不存在（undefined），不设置（表示不更新该字段）
 
       console.log('[AIModelEdit] handleSave - 准备更新的数据:', {
         modelId,

@@ -9,6 +9,20 @@ export const Menu = () => {
 
   // 检查是否有仪表盘权限
   const canAccessDashboard = hasPermission(permissions, 'dashboard:read', userRole);
+  
+  // 检查版本管理权限
+  const canAccessAppVersions = canAccessResource(permissions, 'app-versions', userRole);
+  
+  // 调试：检查版本管理权限
+  if (import.meta.env.DEV) {
+    console.log('[Menu] 版本管理权限检查:', {
+      userRole,
+      permissions: Array.isArray(permissions) ? permissions : 'not array',
+      canAccessAppVersions,
+      adminInfo,
+      requiredPermissions: ['app_versions:read'],
+    });
+  }
 
   return (
     <RAdminMenu>
@@ -126,6 +140,24 @@ export const Menu = () => {
           to="/web-search/config"
           primaryText="联网搜索配置"
           leftIcon={<span>🔍</span>}
+        />
+      )}
+      
+      {/* 积分兑换管理 */}
+      {canAccessResource(permissions, 'credit-exchange', userRole) && (
+        <RAdminMenu.Item
+          to="/credit-exchange"
+          primaryText="积分兑换"
+          leftIcon={<span>🎁</span>}
+        />
+      )}
+
+      {/* 版本管理 */}
+      {canAccessAppVersions && (
+        <RAdminMenu.Item
+          to="/app-versions"
+          primaryText="版本管理"
+          leftIcon={<span>📱</span>}
         />
       )}
     </RAdminMenu>

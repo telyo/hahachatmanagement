@@ -1,5 +1,4 @@
 import { jsx as _jsx } from "react/jsx-runtime";
-import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
@@ -11,4 +10,9 @@ if (import.meta.env.DEV) {
         fullUrl: window.location.href,
     });
 }
-ReactDOM.createRoot(document.getElementById('root')).render(_jsx(React.StrictMode, { children: _jsx(App, {}) }));
+ReactDOM.createRoot(document.getElementById('root')).render(
+// 临时禁用 StrictMode 以调试重复渲染问题
+// <React.StrictMode>
+_jsx(App, {})
+// </React.StrictMode>
+);

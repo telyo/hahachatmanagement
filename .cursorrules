@@ -1,0 +1,15 @@
+# Admin Panel 项目规则
+
+## 模块解析优先级
+- 本项目以 TypeScript 为主，**不要**在 `src/` 下创建与 `.ts`/`.tsx` 同名的 `.js` 文件。
+- 当 `foo.ts` 和 `foo.js` 同时存在时，Vite 会优先解析 `foo.js`，导致 `.ts` 的修改不生效。
+- 若需修改 `services/`、`utils/`、`pages/` 等模块，请只编辑对应的 `.ts` 或 `.tsx` 文件。
+
+## 已删除的冗余 .js 文件（避免重复创建）
+- `src/services/statistics.js` → 使用 `statistics.ts`
+- `src/services/aiUsage.js` → 使用 `aiUsage.ts`
+- `src/services/api.js` → 使用 `api.ts`
+- `src/services/auth.js` → 使用 `auth.ts`
+- `src/services/authProvider.js` → 使用 `authProvider.ts`
+- `src/services/dataProvider.js` → 使用 `dataProvider.ts`
+- `src/pages/AIUsage/AIUsageList.js` → 重导出自 `AIUsageList.tsx`

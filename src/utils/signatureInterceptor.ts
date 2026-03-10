@@ -37,36 +37,66 @@ export function createSignatureInterceptor() {
     let path = '';
     let queryString = '';
     
-    try {
-      const urlObj = new URL(fullUrl);
-      path = urlObj.pathname;
+    // 优先使用 config.params（如果存在），因为 axios 可能还没有将 params 添加到 URL
+    if (config.params && Object.keys(config.params).length > 0) {
+      const sortedParams = Object.keys(config.params)
+        .sort()
+        .map((key) => {
+          const value = config.params![key];
+          if (value === null || value === undefined) {
+            return null;
+          }
+          return `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`;
+        })
+        .filter((item) => item !== null);
+      queryString = sortedParams.join('&');
       
-      // 从 URL 对象中提取查询参数并排序
-      if (urlObj.search) {
-        const params = new URLSearchParams(urlObj.search.substring(1));
-        const sortedParams = Array.from(params.keys())
-          .sort()
-          .map((key) => {
-            const value = params.get(key);
-            return `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`;
-          });
-        queryString = sortedParams.join('&');
+      // 从 URL 中提取路径（不包含查询参数）
+      try {
+        const urlObj = new URL(fullUrl);
+        path = urlObj.pathname;
+      } catch {
+        path = fullUrl.split('?')[0];
+        if (!path.startsWith('/')) {
+          path = '/' + path;
+        }
       }
-    } catch {
-      // 如果解析失败，尝试从 config.params 获取
-      if (config.params) {
-        const sortedParams = Object.keys(config.params)
-          .sort()
-          .map((key) => {
-            const value = config.params![key];
-            return `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`;
-          });
-        queryString = sortedParams.join('&');
-      }
-      // 使用原始路径
-      path = fullUrl.split('?')[0];
-      if (!path.startsWith('/')) {
-        path = '/' + path;
+    } else {
+      // 如果没有 config.params，从 URL 中提取
+      try {
+        const urlObj = new URL(fullUrl);
+        path = urlObj.pathname;
+        
+        // 从 URL 对象中提取查询参数并排序
+        if (urlObj.search) {
+          const params = new URLSearchParams(urlObj.search.substring(1));
+          const sortedParams = Array.from(params.keys())
+            .sort()
+            .map((key) => {
+              const value = params.get(key);
+              return `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`;
+            });
+          queryString = sortedParams.join('&');
+        }
+      } catch {
+        // 如果解析失败，使用原始路径
+        path = fullUrl.split('?')[0];
+        if (!path.startsWith('/')) {
+          path = '/' + path;
+        }
+        // 尝试从 URL 中提取查询字符串
+        const queryIndex = fullUrl.indexOf('?');
+        if (queryIndex !== -1) {
+          const rawQuery = fullUrl.substring(queryIndex + 1);
+          const params = new URLSearchParams(rawQuery);
+          const sortedParams = Array.from(params.keys())
+            .sort()
+            .map((key) => {
+              const value = params.get(key);
+              return `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`;
+            });
+          queryString = sortedParams.join('&');
+        }
       }
     }
 

@@ -2,6 +2,7 @@ export interface Statistics {
   users: {
     total: number;
     newToday: number;
+    newInRange?: number; // 指定时间段内新增用户数
     activeToday: number;
     growth: {
       date: string;
@@ -10,6 +11,7 @@ export interface Statistics {
   };
   revenue: {
     today: number;
+    revenueInRange?: number; // 指定时间段内收入
     thisMonth: number;
     thisYear: number;
     trend: {
@@ -18,7 +20,7 @@ export interface Statistics {
     }[];
   };
   ai: {
-    requestsToday: number;
+    requestsToday: number; // 今日或指定时间段内请求数
     tokensToday: number;
     distribution: {
       modelId: string;

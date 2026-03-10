@@ -6,6 +6,34 @@ import { Upload as UploadIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { Button, Box, Typography } from '@mui/material';
 
+// 导出为 JSON 格式，与导入接口格式一致 { providers: [...] }
+const hahachatProviderJsonExporter = (records: any[]) => {
+  const providers = records.map((record) => ({
+    name: record.name,
+    displayName: record.displayName,
+    description: record.description ?? '',
+    apiEndpoint: record.apiEndpoint ?? '',
+    apiKey: record.apiKey ?? '',
+    secretKey: record.secretKey ?? '',
+    timeoutSeconds: record.timeoutSeconds ?? 30,
+    retryAttempts: record.retryAttempts ?? 3,
+    sortOrder: record.sortOrder ?? 0,
+    status: record.status ?? 'active',
+    ...(record.config && Object.keys(record.config).length > 0 ? { config: record.config } : {}),
+  }));
+  const exportData = { providers };
+  const jsonString = JSON.stringify(exportData, null, 2);
+  const blob = new Blob([jsonString], { type: 'application/json' });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', `hahachat-providers-export-${new Date().toISOString().split('T')[0]}.json`);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+};
+
 const HahachatProviderFilter = (props: Record<string, unknown>) => (
   <Filter {...props}>
     <SelectInput
@@ -116,6 +144,7 @@ export const HahachatProviderList = () => {
       filters={<HahachatProviderFilter />} 
       actions={<ListActions />}
       empty={<EmptyState />}
+      exporter={hahachatProviderJsonExporter}
     >
       <Datagrid rowClick="show">
         <TextField source="name" label="名称" />

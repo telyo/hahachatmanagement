@@ -94,11 +94,49 @@ const httpClient = (url: string, options: Record<string, unknown> = {}) => {
       (networkError as any).body = error;
       throw networkError;
     }
+    
+    // 如果错误有 body，检查是否是后端错误格式，并规范化错误对象
+    // 这样可以避免 React Admin 错误地将字段值当作错误消息
+    if (error.body && typeof error.body === 'object') {
+      console.log('[httpClient] 原始错误 body:', JSON.stringify(error.body, null, 2));
+      
+      let errorMessage = '请求失败';
+      
+      // 检查后端返回的错误格式: { success: false, error: { code: 4006, message: "..." } }
+      if (error.body.error && error.body.error.message) {
+        errorMessage = error.body.error.message;
+      } else if (error.body.message) {
+        errorMessage = error.body.message;
+      } else {
+        // 如果 error.body 包含其他字段（可能是请求数据），忽略它们
+        // 只使用默认错误消息，避免 React Admin 将字段值当作错误消息
+        console.warn('[httpClient] 错误响应包含非标准格式，忽略字段值:', Object.keys(error.body));
+        // 检查是否是请求数据（包含表单字段）
+        const requestDataFields = ['isHahachat', 'status', 'sortOrder', 'timeoutSeconds', 'retryAttempts', 'name', 'displayName', 'loginUrl', 'subscriptionUrl'];
+        const hasRequestDataFields = requestDataFields.some(field => field in error.body);
+        if (hasRequestDataFields) {
+          console.error('[httpClient] 错误：error.body 包含请求数据字段，这不应该发生！');
+          errorMessage = '服务器返回了无效的错误格式';
+        }
+      }
+      
+      // 创建一个新的错误对象，只包含 message，不包含其他字段
+      // 使用 Object.create(null) 创建纯净对象，避免继承 Object.prototype 的方法
+      const formattedError: any = new Error(errorMessage);
+      formattedError.status = error.status;
+      formattedError.body = Object.create(null);
+      formattedError.body.message = errorMessage;
+      
+      console.log('[httpClient] 规范化后的错误 body:', JSON.stringify(formattedError.body, null, 2));
+      throw formattedError;
+    }
+    
     throw error;
   });
 };
 
 import { API_URL, API_BASE_URL } from '../config/env';
+import apiClient from './api';
 
 /**
  * 确保数据项有 id 字段（React Admin 要求）
@@ -110,14 +148,16 @@ function ensureIdField(item: any, resource?: string): any {
   }
   
   // 根据资源类型和常见字段名映射 id
+  // 注意：对于 orders 资源，优先使用 orderId，而不是 planId
   const idValue = item.id || 
+                  (resource === 'orders' ? item.orderId : null) ||
                   (resource === 'ai-models' ? item.modelId : null) ||
                   (resource === 'audit-logs' ? item.logId : null) ||
                   (resource === 'client-providers' ? item.providerId : null) ||
                   (resource === 'hahachat-providers' ? item.providerId : null) ||
                   item.modelId || 
+                  item.orderId ||  // 对于非 orders 资源，orderId 也在 planId 之前
                   item.planId || 
-                  item.orderId || 
                   item.userId || 
                   item.adminId ||
                   item.subscriptionId ||
@@ -301,10 +341,13 @@ export const dataProvider: DataProvider = {
         } else if (resource === 'subscription-plans') {
           // 订阅套餐：优先使用 planId（后端API使用 planId 作为标识符）
           idValue = item.planId;
+        } else if (resource === 'orders') {
+          // 订单：优先使用 orderId，而不是 planId
+          idValue = item.orderId;
         } else {
-          // 通用字段检查
-          idValue = item.modelId || item.planId || 
-                    item.orderId || item.userId || item.adminId || item.logId || item.providerId;
+          // 通用字段检查（注意：orderId 在 planId 之前，避免订单被错误映射）
+          idValue = item.modelId || item.orderId || item.planId || 
+                    item.userId || item.adminId || item.logId || item.providerId;
         }
         
         if (idValue) {
@@ -330,8 +373,11 @@ export const dataProvider: DataProvider = {
       if (!item) return item;
       if (!item.id) {
         // 如果还是没有 id，尝试从所有可能的字段获取
-        const idValue = item.id || item.modelId || item.planId || 
-                        item.orderId || item.userId || item.adminId || item.logId || 
+        // 注意：对于 orders 资源，优先使用 orderId，而不是 planId
+        const idValue = item.id || 
+                        (resource === 'orders' ? item.orderId : null) ||
+                        item.modelId || item.orderId || item.planId || 
+                        item.userId || item.adminId || item.logId || 
                         item.providerId || item.feedbackId;
         if (idValue) {
           console.warn(`[dataProvider] 最终检查：为项 ${index} 添加 id`, { 
@@ -502,6 +548,17 @@ export const dataProvider: DataProvider = {
       });
       console.log('[dataProvider] create 响应:', { resource, json });
       
+      // 检查后端返回的错误（后端可能返回 200 状态码但 success: false）
+      if (json.success === false) {
+        const errorMessage = json.error?.message || json.message || '创建失败';
+        const error: any = new Error(errorMessage);
+        error.body = {
+          message: errorMessage,
+        };
+        error.status = 400;
+        throw error;
+      }
+      
       // React Admin 要求返回的数据必须有 id 字段
       // 对于 AI 模型，后端返回的 modelId 是系统生成的ID，应该作为 id
       // providerModelId 是提供商模型ID，应该映射到前端的 modelId 字段
@@ -527,32 +584,47 @@ export const dataProvider: DataProvider = {
         stack: error.stack,
       });
       
-      // 详细输出错误 body 的内容
+      // 检查后端返回的错误格式
+      // 后端返回格式: { success: false, error: { code: 4006, message: "..." } }
+      let errorMessage = '创建失败';
+      
       if (error.body) {
         console.error('[dataProvider] create 错误 body 内容:', JSON.stringify(error.body, null, 2));
-        if (error.body.errors) {
-          console.error('[dataProvider] create 错误 body.errors:', JSON.stringify(error.body.errors, null, 2));
+        
+        // 检查是否是请求数据（包含表单字段）
+        const requestDataFields = ['isHahachat', 'status', 'sortOrder', 'timeoutSeconds', 'retryAttempts', 'name', 'displayName', 'loginUrl', 'subscriptionUrl', 'apiEndpoint', 'apiKey', 'secretKey', 'supportedModels'];
+        const hasRequestDataFields = requestDataFields.some(field => field in error.body);
+        
+        if (hasRequestDataFields) {
+          console.error('[dataProvider] create 错误：error.body 包含请求数据字段，这不应该发生！');
+          // 如果 error.body 包含请求数据，说明错误处理有问题，使用默认错误消息
+          errorMessage = '创建失败，请检查表单数据';
+        } else if (error.body.message && Object.keys(error.body).length === 1) {
+          // 如果 error.body 已经是规范化格式（只有 message 字段），直接使用
+          errorMessage = error.body.message;
+        } else if (error.body.error && error.body.error.message) {
+          // 如果后端返回的是标准错误格式
+          errorMessage = error.body.error.message;
+        } else if (error.body.message) {
+          // 兼容其他错误格式
+          errorMessage = error.body.message;
+        } else {
+          // 如果 error.body 本身就是错误消息字符串
+          errorMessage = typeof error.body === 'string' ? error.body : '创建失败';
         }
-        if (error.body.message) {
-          console.error('[dataProvider] create 错误 body.message:', error.body.message);
-        }
+      } else if (error.message) {
+        errorMessage = error.message;
       }
       
-      // 如果错误有 body 且包含验证错误，需要正确格式化
-      if (error.body && error.body.errors) {
-        // 服务器返回了字段验证错误
-        const serverErrors = error.body.errors;
-        const formattedError: any = new Error(error.body.message || '服务器验证失败');
-        formattedError.body = {
-          ...error.body,
-          // 确保 errors 格式正确
-          errors: serverErrors,
-        };
-        formattedError.status = error.status || 400;
-        throw formattedError;
-      }
+      // 创建格式化的错误对象，只包含 message，不包含其他字段
+      // 使用 Object.create(null) 创建纯净对象，避免继承 Object.prototype 的方法
+      const formattedError: any = new Error(errorMessage);
+      formattedError.status = error.status || 400;
+      formattedError.body = Object.create(null);
+      formattedError.body.message = errorMessage;
       
-      throw error;
+      console.log('[dataProvider] create 规范化后的错误 body:', JSON.stringify(formattedError.body, null, 2));
+      throw formattedError;
     }
   },
 
@@ -601,6 +673,17 @@ export const dataProvider: DataProvider = {
       
       console.log('[dataProvider] update 响应:', { resource, json });
       
+      // 检查后端返回的错误（后端可能返回 200 状态码但 success: false）
+      if (json.success === false) {
+        const errorMessage = json.error?.message || json.message || '更新失败';
+        const error: any = new Error(errorMessage);
+        error.body = {
+          message: errorMessage,
+        };
+        error.status = 400;
+        throw error;
+      }
+      
       // 确保返回的数据有 id 字段（React Admin 要求）
       let responseData = json.data || {};
       responseData = ensureIdField(responseData, resource);
@@ -620,32 +703,38 @@ export const dataProvider: DataProvider = {
         message: error.message,
       });
       
-      // 详细输出错误 body 的内容
+      // 检查后端返回的错误格式
+      // 后端返回格式: { success: false, error: { code: 4006, message: "..." } }
+      let errorMessage = '更新失败';
+      
       if (error.body) {
         console.error('[dataProvider] update 错误 body 内容:', JSON.stringify(error.body, null, 2));
-        if (error.body.errors) {
-          console.error('[dataProvider] update 错误 body.errors:', JSON.stringify(error.body.errors, null, 2));
+        
+        // 如果 error.body 已经是规范化格式（只有 message 字段），直接使用
+        if (error.body.message && Object.keys(error.body).length === 1) {
+          errorMessage = error.body.message;
+        } else if (error.body.error && error.body.error.message) {
+          // 如果后端返回的是标准错误格式
+          errorMessage = error.body.error.message;
+        } else if (error.body.message) {
+          // 兼容其他错误格式
+          errorMessage = error.body.message;
+        } else {
+          // 如果 error.body 本身就是错误消息字符串
+          errorMessage = typeof error.body === 'string' ? error.body : '更新失败';
         }
-        if (error.body.message) {
-          console.error('[dataProvider] update 错误 body.message:', error.body.message);
-        }
+      } else if (error.message) {
+        errorMessage = error.message;
       }
       
-      // 如果错误有 body 且包含验证错误，需要正确格式化
-      if (error.body && error.body.errors) {
-        // 服务器返回了字段验证错误
-        const serverErrors = error.body.errors;
-        const formattedError: any = new Error(error.body.message || '服务器验证失败');
-        formattedError.body = {
-          ...error.body,
-          // 确保 errors 格式正确
-          errors: serverErrors,
-        };
-        formattedError.status = error.status || 400;
-        throw formattedError;
-      }
-      
-      throw error;
+      // 创建格式化的错误对象，只包含 message，不包含其他字段
+      // 这样可以避免 React Admin 错误地将字段值当作错误消息
+      const formattedError: any = new Error(errorMessage);
+      formattedError.body = {
+        message: errorMessage,
+      };
+      formattedError.status = error.status || 400;
+      throw formattedError;
     }
   },
 
@@ -666,10 +755,13 @@ export const dataProvider: DataProvider = {
       throw new Error('操作日志不允许删除');
     }
     const apiPath = resourceMap[resource] || resource;
-    const url = `${API_URL}/admin/${apiPath}/${params.id}`;
-    await httpClient(url, {
-      method: 'DELETE',
-    });
+    // AI 模型使用 apiClient 确保请求正确发送
+    if (resource === 'ai-models') {
+      await apiClient.delete(`/admin/${apiPath}/${params.id}`);
+    } else {
+      const url = `${API_URL}/admin/${apiPath}/${params.id}`;
+      await httpClient(url, { method: 'DELETE' });
+    }
     return { data: { id: params.id } };
   },
 
@@ -678,12 +770,22 @@ export const dataProvider: DataProvider = {
     if (resource === 'audit-logs') {
       throw new Error('操作日志不允许删除');
     }
-    const promises = params.ids.map((id) =>
-      httpClient(`${API_URL}/admin/${resourceMap[resource] || resource}/${id}`, {
-        method: 'DELETE',
-      })
-    );
-    await Promise.all(promises);
+    const apiPath = resourceMap[resource] || resource;
+    // AI 模型等使用 apiClient 确保请求正确发送（含签名、Token）
+    if (resource === 'ai-models') {
+      await Promise.all(
+        params.ids.map((id) =>
+          apiClient.delete(`/admin/${apiPath}/${id}`)
+        )
+      );
+    } else {
+      const promises = params.ids.map((id) =>
+        httpClient(`${API_URL}/admin/${apiPath}/${id}`, {
+          method: 'DELETE',
+        })
+      );
+      await Promise.all(promises);
+    }
     return { data: params.ids };
   },
 };
@@ -718,18 +820,11 @@ function convertAIModelFrontendToBackendRequest(frontendData: any): any {
     status: frontendData.status || 'active',
   };
 
-  // 转换 Pricing
-  // React Admin 可能将 pricing.inputPrice 转换为 { pricing: { inputPrice: ... } } 或保持为 'pricing.inputPrice'
+  // Pricing（直接使用后端字段名）
   const pricing = frontendData.pricing || {};
-  const inputPrice = pricing.inputPrice ?? frontendData['pricing.inputPrice'];
-  const outputPrice = pricing.outputPrice ?? frontendData['pricing.outputPrice'];
-  
-  if (inputPrice !== undefined || outputPrice !== undefined) {
+  if (pricing.creditsPerRequest !== undefined) {
     backendRequest.pricing = {
-      inputTokensPerCredit: inputPrice || 0,
-      outputTokensPerCredit: outputPrice || 0,
-      billingMethod: 'tokens',
-      baseCost: 0,
+      creditsPerRequest: pricing.creditsPerRequest ?? 1,
     };
   }
 
@@ -769,28 +864,22 @@ function convertAIModelFrontendToBackendRequest(frontendData: any): any {
   // 转换 Access（前端使用 permissions，后端使用 access）
   const permissions = frontendData.permissions || {};
   const hasAccess = 
-    permissions.requiresSubscription !== undefined ||
+    permissions.category !== undefined ||
     permissions.allowedPlans !== undefined ||
-    permissions.minCredits !== undefined ||
-    frontendData['permissions.requiresSubscription'] !== undefined ||
+    permissions.excludedPlans !== undefined ||
+    permissions.exclusiveToPlans !== undefined ||
+    frontendData['permissions.category'] !== undefined ||
     frontendData['permissions.allowedPlans'] !== undefined ||
-    frontendData['permissions.minCredits'] !== undefined;
+    frontendData['permissions.excludedPlans'] !== undefined ||
+    frontendData['permissions.exclusiveToPlans'] !== undefined;
     
   if (hasAccess) {
-    const requiresSubscription = permissions.requiresSubscription ?? frontendData['permissions.requiresSubscription'] ?? false;
-    const minCredits = permissions.minCredits ?? frontendData['permissions.minCredits'];
     backendRequest.access = {
-      category: requiresSubscription ? 'exclusive' : 'common',
-      requiresSubscription: requiresSubscription,
+      category: permissions.category ?? frontendData['permissions.category'] ?? 'common',
       allowedPlans: permissions.allowedPlans ?? frontendData['permissions.allowedPlans'] ?? [],
-      excludedPlans: [],
-      exclusiveToPlans: [],
+      excludedPlans: permissions.excludedPlans ?? frontendData['permissions.excludedPlans'] ?? [],
+      exclusiveToPlans: permissions.exclusiveToPlans ?? frontendData['permissions.exclusiveToPlans'] ?? [],
     };
-    // 如果提供了 minCredits，添加到 access 中
-    if (minCredits !== undefined && minCredits !== null) {
-      const minCreditsValue = typeof minCredits === 'number' ? Math.floor(minCredits) : parseInt(String(minCredits), 10);
-      backendRequest.access.minCredits = minCreditsValue;
-    }
   }
 
   // 转换 Display（前端使用 displayConfig，后端使用 display）
@@ -800,32 +889,13 @@ function convertAIModelFrontendToBackendRequest(frontendData: any): any {
     displayConfig.isFeatured !== undefined ||
     displayConfig.iconUrl !== undefined ||
     frontendData['displayConfig.sortOrder'] !== undefined ||
-    frontendData['displayConfig.isFeatured'] !== undefined ||
     frontendData['displayConfig.iconUrl'] !== undefined;
 
-  // 转换 Providers（Hahachat 提供商列表）
-  if (frontendData.providers && Array.isArray(frontendData.providers)) {
-    backendRequest.providers = frontendData.providers.map((item: any, index: number) => {
-      if (typeof item === 'string') {
-        return { providerId: item, sortOrder: index };
-      }
-      if (typeof item === 'object' && item !== null) {
-        return {
-          providerId: item.providerId || item.id,
-          sortOrder: item.sortOrder !== undefined ? item.sortOrder : index,
-        };
-      }
-      return null;
-    }).filter((item: any) => item !== null && item.providerId);
-  } else {
-    backendRequest.providers = [];
-  }
     
   if (hasDisplay) {
     backendRequest.display = {
       sortOrder: displayConfig.sortOrder ?? frontendData['displayConfig.sortOrder'] ?? 0,
-      visible: displayConfig.isFeatured ?? frontendData['displayConfig.isFeatured'] ?? false,
-      iconUrl: displayConfig.iconUrl ?? frontendData['displayConfig.iconUrl'] ?? null,
+      iconURL: displayConfig.iconUrl ?? frontendData['displayConfig.iconUrl'] ?? null,
       tags: [],
       badge: null,
       description: frontendData.description || null,
@@ -887,20 +957,11 @@ function convertAIModelFrontendUpdateToBackendRequest(frontendData: any): any {
   if (frontendData.type !== undefined) backendRequest.type = frontendData.type;
   if (frontendData.status !== undefined) backendRequest.status = frontendData.status;
 
-  // 转换 Pricing
+  // Pricing（直接使用后端字段名）
   const pricing = frontendData.pricing || {};
-  const inputPrice = pricing.inputPrice ?? frontendData['pricing.inputPrice'];
-  const outputPrice = pricing.outputPrice ?? frontendData['pricing.outputPrice'];
-  
-  // 只有当至少一个价格字段有值时，才更新 pricing
-  // 注意：如果只修改了一个价格，另一个应该保留现有值（由后端处理）
-  if (inputPrice !== undefined || outputPrice !== undefined) {
+  if (pricing.creditsPerRequest !== undefined) {
     backendRequest.pricing = {
-      // 如果前端提供了值，使用前端值；否则使用 0（后端会合并现有值）
-      inputTokensPerCredit: inputPrice !== undefined ? inputPrice : 0,
-      outputTokensPerCredit: outputPrice !== undefined ? outputPrice : 0,
-      billingMethod: 'tokens',
-      baseCost: 0,
+      creditsPerRequest: pricing.creditsPerRequest,
     };
   }
 
@@ -940,30 +1001,22 @@ function convertAIModelFrontendUpdateToBackendRequest(frontendData: any): any {
   // 转换 Access
   const permissions = frontendData.permissions || {};
   const hasAccess = 
-    permissions.requiresSubscription !== undefined ||
+    permissions.category !== undefined ||
     permissions.allowedPlans !== undefined ||
-    permissions.minCredits !== undefined ||
-    frontendData['permissions.requiresSubscription'] !== undefined ||
+    permissions.excludedPlans !== undefined ||
+    permissions.exclusiveToPlans !== undefined ||
+    frontendData['permissions.category'] !== undefined ||
     frontendData['permissions.allowedPlans'] !== undefined ||
-    frontendData['permissions.minCredits'] !== undefined;
+    frontendData['permissions.excludedPlans'] !== undefined ||
+    frontendData['permissions.exclusiveToPlans'] !== undefined;
     
   if (hasAccess) {
-    const requiresSubscription = permissions.requiresSubscription ?? frontendData['permissions.requiresSubscription'] ?? false;
-    const minCredits = permissions.minCredits ?? frontendData['permissions.minCredits'];
     backendRequest.access = {
-      category: requiresSubscription ? 'exclusive' : 'common',
-      requiresSubscription: requiresSubscription,
+      category: permissions.category ?? frontendData['permissions.category'] ?? 'common',
       allowedPlans: permissions.allowedPlans ?? frontendData['permissions.allowedPlans'] ?? [],
-      excludedPlans: [],
-      exclusiveToPlans: [],
+      excludedPlans: permissions.excludedPlans ?? frontendData['permissions.excludedPlans'] ?? [],
+      exclusiveToPlans: permissions.exclusiveToPlans ?? frontendData['permissions.exclusiveToPlans'] ?? [],
     };
-    // 如果提供了 minCredits，添加到 access 中
-    if (minCredits !== undefined && minCredits !== null) {
-      // 转换为整数（后端使用 *int64）
-      const minCreditsValue = typeof minCredits === 'number' ? Math.floor(minCredits) : parseInt(String(minCredits), 10);
-      // 注意：后端使用 *int64，所以即使是 0 也要传递（nil 表示不设置）
-      backendRequest.access.minCredits = minCreditsValue;
-    }
   }
 
   // 转换 Display
@@ -973,23 +1026,23 @@ function convertAIModelFrontendUpdateToBackendRequest(frontendData: any): any {
     displayConfig.isFeatured !== undefined ||
     displayConfig.iconUrl !== undefined ||
     frontendData['displayConfig.sortOrder'] !== undefined ||
-    frontendData['displayConfig.isFeatured'] !== undefined ||
     frontendData['displayConfig.iconUrl'] !== undefined;
     
   if (hasDisplay) {
     backendRequest.display = {
       sortOrder: displayConfig.sortOrder ?? frontendData['displayConfig.sortOrder'] ?? 0,
-      visible: displayConfig.isFeatured ?? frontendData['displayConfig.isFeatured'] ?? false,
-      iconUrl: displayConfig.iconUrl ?? frontendData['displayConfig.iconUrl'] ?? null,
+      iconURL: displayConfig.iconUrl ?? frontendData['displayConfig.iconUrl'] ?? null,
       tags: [],
       badge: null,
       description: frontendData.description || null,
     };
   }
 
-  // 转换 Providers（Hahachat 提供商列表）
+  // 处理 Providers（提供商配置列表）
+  // 注意：即使 providers 为空数组，也应该发送到后端（表示清空所有提供商）
   if (frontendData.providers !== undefined) {
-    if (Array.isArray(frontendData.providers)) {
+    if (Array.isArray(frontendData.providers) && frontendData.providers.length > 0) {
+      // 确保格式为 [{ providerId, sortOrder }]
       backendRequest.providers = frontendData.providers.map((item: any, index: number) => {
         if (typeof item === 'string') {
           return { providerId: item, sortOrder: index };
@@ -1003,14 +1056,19 @@ function convertAIModelFrontendUpdateToBackendRequest(frontendData: any): any {
         return null;
       }).filter((item: any) => item !== null && item.providerId);
     } else {
+      // 如果 providers 为空数组或 undefined，设置为空数组（清空所有提供商）
       backendRequest.providers = [];
     }
+  } else {
+    // 如果 providers 字段不存在，不设置（表示不更新该字段）
+    // 但如果用户明确清空了所有提供商，providers 应该是空数组，所以这里不应该设置
   }
 
   if (import.meta.env.DEV) {
     console.log('[dataProvider] AI模型更新请求转换', {
       frontend: frontendData,
       backend: backendRequest,
+      providers: backendRequest.providers,
     });
   }
 
@@ -1019,8 +1077,8 @@ function convertAIModelFrontendUpdateToBackendRequest(frontendData: any): any {
 
 /**
  * 将后端返回的嵌套 AI 模型数据转换为前端期望的扁平结构
- * 后端格式：{ pricing: { inputTokensPerCredit, outputTokensPerCredit }, access: { minCredits }, ... }
- * 前端格式：{ pricing: { inputPrice, outputPrice }, permissions: { minCredits }, ... }
+ * 后端格式：{ pricing: { inputTokensPerCredit, outputTokensPerCredit }, access: { ... }, ... }
+ * 前端格式：{ pricing: { inputTokensPerCredit, outputTokensPerCredit }, permissions: { ... }, ... }
  */
 function convertAIModelBackendToFrontend(backendData: any): any {
   if (!backendData) {
@@ -1044,16 +1102,14 @@ function convertAIModelBackendToFrontend(backendData: any): any {
     frontendData.modelId = '';
   }
 
-  // 转换 pricing: inputTokensPerCredit -> inputPrice, outputTokensPerCredit -> outputPrice
+  // Pricing（直接使用后端字段名，无需转换）
   if (backendData.pricing) {
     frontendData.pricing = {
-      inputPrice: backendData.pricing.inputTokensPerCredit || 0,
-      outputPrice: backendData.pricing.outputTokensPerCredit || 0,
+      creditsPerRequest: backendData.pricing.creditsPerRequest || 1,
     };
   } else {
     frontendData.pricing = {
-      inputPrice: 0,
-      outputPrice: 0,
+      creditsPerRequest: 1,
     };
   }
 
@@ -1082,40 +1138,48 @@ function convertAIModelBackendToFrontend(backendData: any): any {
     };
   }
 
-  // 转换 access -> permissions: access.minCredits -> permissions.minCredits
+  // 转换 access -> permissions
   if (backendData.access) {
     frontendData.permissions = {
-      requiresSubscription: backendData.access.requiresSubscription || false,
+      category: backendData.access.category || 'common',
       allowedPlans: backendData.access.allowedPlans || [],
-      minCredits: backendData.access.minCredits ? Number(backendData.access.minCredits) : undefined,
+      excludedPlans: backendData.access.excludedPlans || [],
+      exclusiveToPlans: backendData.access.exclusiveToPlans || [],
     };
   } else {
     frontendData.permissions = {
-      requiresSubscription: false,
+      category: 'common',
       allowedPlans: [],
-      minCredits: undefined,
+      excludedPlans: [],
+      exclusiveToPlans: [],
     };
   }
 
-  // 转换 display -> displayConfig: display.sortOrder -> displayConfig.sortOrder, display.visible -> displayConfig.isFeatured
+  // 转换 display -> displayConfig: display.sortOrder -> displayConfig.sortOrder
   if (backendData.display) {
     frontendData.displayConfig = {
       sortOrder: backendData.display.sortOrder || 0,
-      isFeatured: backendData.display.visible || false,
-      iconUrl: backendData.display.iconUrl || undefined,
+      iconUrl: backendData.display.iconURL || undefined,
     };
   } else {
     frontendData.displayConfig = {
       sortOrder: 0,
-      isFeatured: false,
       iconUrl: undefined,
     };
+  }
+
+  // 处理 Providers（提供商配置列表）- 直接传递，无需转换
+  if (backendData.providers !== undefined) {
+    frontendData.providers = Array.isArray(backendData.providers) ? backendData.providers : [];
+  } else {
+    frontendData.providers = [];
   }
 
   if (import.meta.env.DEV) {
     console.log('[dataProvider] AI模型后端数据转换', {
       backend: backendData,
       frontend: frontendData,
+      providers: frontendData.providers,
     });
   }
 

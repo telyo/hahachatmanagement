@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useGetList, usePermissions } from 'react-admin';
-import { Box, Grid, Card, CardContent, Typography, CircularProgress, Alert } from '@mui/material';
+import { Box, Grid, Card, CardContent, Typography, CircularProgress, Alert, ButtonGroup, Button, TextField } from '@mui/material';
 import {
   People as PeopleIcon,
   AttachMoney as MoneyIcon,
@@ -39,16 +39,45 @@ export const Dashboard = () => {
   const [statistics, setStatistics] = useState<Statistics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dateRange, setDateRange] = useState<'today' | '7d' | '30d' | 'custom'>('7d');
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    return d.toISOString().split('T')[0];
+  });
+  const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
+
+  const { startTime, endTime, isTodayRange } = useMemo(() => {
+    const end = new Date();
+    const endMs = end.getTime();
+    let startMs: number;
+    if (dateRange === 'today') {
+      startMs = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 0, 0, 0).getTime();
+      return { startTime: startMs, endTime: endMs, isTodayRange: true };
+    } else if (dateRange === '7d') {
+      startMs = endMs - 7 * 24 * 60 * 60 * 1000;
+      return { startTime: startMs, endTime: endMs, isTodayRange: false };
+    } else if (dateRange === '30d') {
+      startMs = endMs - 30 * 24 * 60 * 60 * 1000;
+      return { startTime: startMs, endTime: endMs, isTodayRange: false };
+    } else {
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      const endD = new Date(endDate);
+      endD.setHours(23, 59, 59, 999);
+      const sameDay = startDate === endDate;
+      return {
+        startTime: start.getTime(),
+        endTime: endD.getTime(),
+        isTodayRange: sameDay,
+      };
+    }
+  }, [dateRange, startDate, endDate]);
 
   useEffect(() => {
-    // 如果在登录页或没有 token，不加载数据
     const onLoginPage = isLoginPage();
     const token = authUtils.getToken();
-    
     if (onLoginPage || !token) {
-      if (import.meta.env.DEV) {
-        console.log('[Dashboard] 在登录页或没有 token，跳过数据加载');
-      }
       setLoading(false);
       return;
     }
@@ -56,14 +85,11 @@ export const Dashboard = () => {
     const fetchStatistics = async () => {
       try {
         setLoading(true);
-        // 尝试获取统计数据，如果接口不存在则使用模拟数据
         try {
-          const response = await statisticsService.getStatistics();
+          const response = await statisticsService.getStatistics({ startTime, endTime });
           setStatistics(response.data);
         } catch (err: any) {
-          // 如果接口不存在（404），使用模拟数据
           if (err.response?.status === 404) {
-            console.warn('统计数据接口未实现，使用模拟数据');
             setStatistics(null);
           } else {
             throw err;
@@ -79,7 +105,7 @@ export const Dashboard = () => {
     };
 
     fetchStatistics();
-  }, []);
+  }, [startTime, endTime]);
 
   // 检查是否应该获取数据
   const onLoginPage = isLoginPage();
@@ -96,9 +122,10 @@ export const Dashboard = () => {
   } as any);
 
   const totalUsers = statistics?.users?.total || users?.total || 0;
-  const newToday = statistics?.users?.newToday || 0;
-  const todayRevenue = statistics?.revenue?.today || 0;
-  const requestsToday = statistics?.ai?.requestsToday || 0;
+  // 当传入时间段时，后端返回 newInRange/revenueInRange；否则用 newToday/today
+  const newCount = (statistics?.users?.newInRange ?? statistics?.users?.newToday) ?? 0;
+  const revenueCount = (statistics?.revenue?.revenueInRange ?? statistics?.revenue?.today) ?? 0;
+  const requestsCount = statistics?.ai?.requestsToday ?? 0;
 
   // 使用真实数据或模拟数据
   const userGrowthData = statistics?.users?.growth || [
@@ -150,9 +177,67 @@ export const Dashboard = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
-        仪表盘
-      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2, mb: 2 }}>
+        <Typography variant="h4">
+          仪表盘
+        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+          <ButtonGroup size="small" variant="outlined">
+            <Button color={dateRange === 'today' ? 'primary' : 'inherit'} onClick={() => setDateRange('today')}>
+              今日
+            </Button>
+            <Button color={dateRange === '7d' ? 'primary' : 'inherit'} onClick={() => setDateRange('7d')}>
+              最近7天
+            </Button>
+            <Button color={dateRange === '30d' ? 'primary' : 'inherit'} onClick={() => setDateRange('30d')}>
+              最近30天
+            </Button>
+            <Button
+              color={dateRange === 'custom' ? 'primary' : 'inherit'}
+              onClick={() => setDateRange('custom')}
+            >
+              自定义
+            </Button>
+          </ButtonGroup>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <TextField
+              label="开始日期"
+              type="date"
+              value={
+                dateRange === 'custom'
+                  ? startDate
+                  : (() => {
+                      const d = new Date();
+                      if (dateRange === 'today') return d.toISOString().split('T')[0];
+                      if (dateRange === '7d') d.setDate(d.getDate() - 6);
+                      else if (dateRange === '30d') d.setDate(d.getDate() - 29);
+                      return d.toISOString().split('T')[0];
+                    })()
+              }
+              onChange={(e) => {
+                setStartDate(e.target.value);
+                setDateRange('custom');
+              }}
+              InputLabelProps={{ shrink: true }}
+              size="small"
+              sx={{ width: 160 }}
+            />
+            <TextField
+              label="结束日期"
+              type="date"
+              value={dateRange === 'custom' ? endDate : new Date().toISOString().split('T')[0]}
+              onChange={(e) => {
+                setEndDate(e.target.value);
+                setDateRange('custom');
+              }}
+              InputLabelProps={{ shrink: true }}
+              size="small"
+              sx={{ width: 160 }}
+              inputProps={{ max: new Date().toISOString().split('T')[0] }}
+            />
+          </Box>
+        </Box>
+      </Box>
 
       {error && (
         <Alert severity="warning" sx={{ mb: 2 }}>
@@ -177,24 +262,24 @@ export const Dashboard = () => {
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
-            title="今日新增"
-            value={newToday.toLocaleString()}
+            title={isTodayRange ? '今日新增' : '时段内新增'}
+            value={newCount.toLocaleString()}
             icon={TrendingUpIcon}
             color="success.main"
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
-            title="今日收入"
-            value={formatUtils.currency(todayRevenue)}
+            title={isTodayRange ? '今日收入' : '时段内收入'}
+            value={formatUtils.currency(revenueCount)}
             icon={MoneyIcon}
             color="warning.main"
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
-            title="今日AI请求"
-            value={requestsToday.toLocaleString()}
+            title={isTodayRange ? '今日AI请求' : '时段内AI请求'}
+            value={requestsCount.toLocaleString()}
             icon={ChatIcon}
             color="info.main"
           />

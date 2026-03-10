@@ -44,7 +44,7 @@ export const UserList = () => {
         <FunctionField
           label="积分"
           render={(record: any) => {
-            return record.virtualCurrency?.balance ?? record.credits ?? 0;
+            return record.virtualCurrency?.totalBalance ?? 0;
           }}
         />
         <FunctionField

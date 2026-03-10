@@ -9,6 +9,7 @@ BUCKET_NAME="${ENVIRONMENT}-hahachat-admin-panel"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ADMIN_PANEL_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 BUILD_DIR="$ADMIN_PANEL_DIR/dist"
+AWS_REGION=${AWS_REGION:-us-east-1}
 
 echo "========================================="
 echo "部署后台管理系统到 AWS"
@@ -129,38 +130,101 @@ fi
 # 上传文件到 S3
 echo ""
 echo "📤 上传文件到 S3..."
+# 先上传除 index.html 外的所有文件（带缓存）
 aws s3 sync "$BUILD_DIR" "s3://$BUCKET_NAME/" \
     --delete \
     --exclude "*.map" \
-    --cache-control "public, max-age=3600" \
+    --exclude ".git/*" \
     --exclude "index.html" \
-    --cache-control "public, max-age=0, must-revalidate" \
-    --include "index.html"
+    --cache-control "public, max-age=3600" \
+    --region "${AWS_REGION:-us-east-1}"
 
-# 单独上传 index.html（不缓存）
+# 单独上传 index.html（不缓存，确保更新及时生效）
 aws s3 cp "$BUILD_DIR/index.html" "s3://$BUCKET_NAME/index.html" \
     --cache-control "public, max-age=0, must-revalidate" \
-    --content-type "text/html"
+    --content-type "text/html" \
+    --region "${AWS_REGION:-us-east-1}"
 
 echo ""
 echo "✅ 文件上传完成"
 
-# 获取 CloudFront Distribution ID（如果存在）
+# 获取或创建 CloudFront Distribution
 echo ""
 echo "🔍 查找 CloudFront Distribution..."
 DISTRIBUTION_ID=$(aws cloudfront list-distributions \
     --query "DistributionList.Items[?Comment=='Admin Panel - ${ENVIRONMENT}'].Id" \
     --output text 2>/dev/null | head -1)
 
+# 生产环境若不存在则创建 CloudFront（支持 HTTPS）
+if [ -z "$DISTRIBUTION_ID" ] || [ "$DISTRIBUTION_ID" == "None" ]; then
+    if [ "$ENVIRONMENT" == "production" ] || [ "$ENVIRONMENT" == "prod" ]; then
+        echo "📦 创建 CloudFront Distribution（生产环境）..."
+        ORIGIN_DOMAIN="${BUCKET_NAME}.s3-website-${AWS_REGION:-us-east-1}.amazonaws.com"
+        cat > /tmp/cf-dist-config.json <<CFEOF
+{
+  "CallerReference": "admin-panel-${ENVIRONMENT}-$(date +%s)",
+  "Comment": "Admin Panel - ${ENVIRONMENT}",
+  "Enabled": true,
+  "DefaultRootObject": "index.html",
+  "Origins": {
+    "Quantity": 1,
+    "Items": [{
+      "Id": "S3-${BUCKET_NAME}",
+      "DomainName": "${ORIGIN_DOMAIN}",
+      "CustomOriginConfig": {
+        "HTTPPort": 80,
+        "HTTPSPort": 443,
+        "OriginProtocolPolicy": "http-only"
+      }
+    }]
+  },
+  "DefaultCacheBehavior": {
+    "TargetOriginId": "S3-${BUCKET_NAME}",
+    "ViewerProtocolPolicy": "redirect-to-https",
+    "AllowedMethods": {"Quantity": 2, "Items": ["GET", "HEAD"], "CachedMethods": {"Quantity": 2, "Items": ["GET", "HEAD"]}},
+    "Compress": true,
+    "ForwardedValues": {"QueryString": true, "Cookies": {"Forward": "none"}},
+    "DefaultTTL": 3600,
+    "MinTTL": 0,
+    "MaxTTL": 86400
+  },
+  "CustomErrorResponses": {
+    "Quantity": 1,
+    "Items": [{
+      "ErrorCode": 404,
+      "ResponsePagePath": "/index.html",
+      "ResponseCode": "200",
+      "ErrorCachingMinTTL": 300
+    }]
+  }
+}
+CFEOF
+        DISTRIBUTION_ID=$(aws cloudfront create-distribution \
+            --distribution-config file:///tmp/cf-dist-config.json \
+            --query "Distribution.Id" \
+            --output text 2>/dev/null || echo "")
+        rm -f /tmp/cf-dist-config.json
+        if [ -n "$DISTRIBUTION_ID" ]; then
+            echo "✅ CloudFront 创建成功: $DISTRIBUTION_ID"
+            echo "   等待部署生效（约 5-10 分钟）..."
+        fi
+    fi
+fi
+
 if [ -n "$DISTRIBUTION_ID" ] && [ "$DISTRIBUTION_ID" != "None" ]; then
     echo "✅ 找到 CloudFront Distribution: $DISTRIBUTION_ID"
     echo ""
     echo "🔄 清除 CloudFront 缓存..."
-    aws cloudfront create-invalidation \
+    if aws cloudfront create-invalidation \
         --distribution-id "$DISTRIBUTION_ID" \
         --paths "/*" \
-        --output text > /dev/null
-    echo "✅ 缓存清除完成"
+        --output text 2>/dev/null; then
+        echo "✅ 缓存清除完成"
+    else
+        echo "⚠️  缓存清除失败（可能缺少 cloudfront:CreateInvalidation 权限）"
+        echo "   文件已上传成功，新版本将在 CloudFront 缓存过期后生效（约 1 小时）"
+        echo "   如需立即生效，请为 IAM 用户添加 cloudfront:CreateInvalidation 权限后重新运行"
+    fi
 else
     echo "⚠️  未找到 CloudFront Distribution"
     echo "提示: 如果需要清除 CloudFront 缓存，请运行:"
@@ -173,15 +237,22 @@ echo "========================================="
 echo "✅ 部署完成！"
 echo "========================================="
 echo "S3 Bucket: $BUCKET_NAME"
-echo "S3 Website URL: https://$BUCKET_NAME.s3-website-${AWS_REGION:-us-east-1}.amazonaws.com"
+# S3 静态网站仅支持 HTTP，不支持 HTTPS
+echo "S3 Website URL (HTTP): http://$BUCKET_NAME.s3-website-${AWS_REGION:-us-east-1}.amazonaws.com"
 if [ -n "$DISTRIBUTION_ID" ] && [ "$DISTRIBUTION_ID" != "None" ]; then
     CLOUDFRONT_URL=$(aws cloudfront get-distribution \
         --id "$DISTRIBUTION_ID" \
         --query "Distribution.DomainName" \
         --output text 2>/dev/null)
     if [ -n "$CLOUDFRONT_URL" ]; then
-        echo "CloudFront URL: https://$CLOUDFRONT_URL"
+        echo "CloudFront URL (HTTPS): https://$CLOUDFRONT_URL"
+        echo "推荐使用 CloudFront 访问（支持 HTTPS）"
     fi
+else
+    echo ""
+    echo "⚠️  未找到 CloudFront Distribution，S3 网站仅支持 HTTP"
+    echo "生产环境建议创建 CloudFront 以支持 HTTPS 和自定义域名 management.hahachat.ai"
+    echo "运行: ./scripts/configure-admin-panel-domain.sh production management.hahachat.ai"
 fi
 echo ""
 echo "提示: 如果配置了自定义域名，请确保 DNS 已正确配置"

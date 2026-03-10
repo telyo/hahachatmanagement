@@ -39,8 +39,7 @@ export const AIModelCreate = () => (
         defaultValue="active"
       />
       
-      <NumberInput source="pricing.inputPrice" label="输入价格（每1K tokens）" required />
-      <NumberInput source="pricing.outputPrice" label="输出价格（每1K tokens）" required />
+      <NumberInput source="pricing.creditsPerRequest" label="对话一次消耗的积分" required defaultValue={1} helperText="每次对话消耗的积分数" />
       
       <NumberInput source="capabilities.maxTokens" label="最大Tokens" />
       <BooleanInput source="capabilities.supportsStreaming" label="支持流式" defaultValue={false} />
@@ -51,30 +50,33 @@ export const AIModelCreate = () => (
       <NumberInput source="capabilities.maxImages" label="最大图像数量" defaultValue={0} helperText="单次请求可处理的最大图像数量" />
       <NumberInput source="capabilities.maxDocuments" label="最大文档数量" defaultValue={0} helperText="单次请求可处理的最大文档数量" />
       
-      <BooleanInput source="permissions.requiresSubscription" label="需要订阅" defaultValue={false} />
-      <ArrayInput source="permissions.allowedPlans" label="允许的套餐">
-        <SimpleFormIterator>
-          <TextInput source="" label="套餐ID" />
-        </SimpleFormIterator>
-      </ArrayInput>
-      <NumberInput source="permissions.minCredits" label="最小积分" />
+      <SelectInput
+        source="permissions.category"
+        label="访问类别"
+        choices={[
+          { id: 'common', name: '通用' },
+          { id: 'exclusive', name: '专属' },
+          { id: 'embedding', name: '嵌入' },
+        ]}
+        defaultValue="common"
+        helperText="嵌入类型仅后端用于记忆与文档分析，不向用户展示"
+      />
       
       <NumberInput source="displayConfig.sortOrder" label="排序" defaultValue={0} />
-      <BooleanInput source="displayConfig.isFeatured" label="是否推荐" defaultValue={false} />
+      
+      <Divider sx={{ my: 2 }} />
+      
+      <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>提供商配置</Typography>
+      <ProviderSelector 
+        source="providers" 
+        label="提供商" 
+        helperText="选择该模型使用的 Hahachat 提供商，按优先级排序。聊天时会按优先级顺序尝试使用提供商。"
+      />
       
       <Divider sx={{ my: 2 }} />
       
       <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>模型图标</Typography>
       <AIModelIconUpload />
-      
-      <Divider sx={{ my: 2 }} />
-      
-      <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>Hahachat 提供商配置</Typography>
-      <ProviderSelector
-        source="providers"
-        label="支持的提供商"
-        helperText="选择支持此模型的 Hahachat 提供商。可以多选并排序，系统会按优先级自动切换。如果提供商没有设置支持的模型，则支持所有模型。"
-      />
     </SimpleForm>
   </Create>
 );

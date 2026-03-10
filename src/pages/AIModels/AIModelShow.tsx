@@ -29,24 +29,16 @@ export const AIModelShow = () => (
       <TextField source="type" label="类型" />
       <TextField source="status" label="状态" format={(status) => String(formatUtils.status(status || ''))} />
       
-      <TextField source="pricing.inputPrice" label="输入价格（每1K tokens）" />
-      <TextField source="pricing.outputPrice" label="输出价格（每1K tokens）" />
+      <NumberField source="pricing.creditsPerRequest" label="对话一次消耗的积分" />
       
       <NumberField source="capabilities.maxTokens" label="最大Tokens" />
       <BooleanField source="capabilities.supportsStreaming" label="支持流式" />
       <BooleanField source="capabilities.supportsFunctionCalling" label="支持函数调用" />
       <BooleanField source="capabilities.supportsVision" label="支持视觉" />
       
-      <BooleanField source="permissions.requiresSubscription" label="需要订阅" />
-      <ArrayField source="permissions.allowedPlans" label="允许的套餐">
-        <SingleFieldList>
-          <ChipField source="" />
-        </SingleFieldList>
-      </ArrayField>
-      <NumberField source="permissions.minCredits" label="最小积分" />
+      <TextField source="permissions.category" label="访问类别" format={(value) => value === 'exclusive' ? '专属' : value === 'embedding' ? '嵌入' : '通用'} />
       
       <NumberField source="displayConfig.sortOrder" label="排序" />
-      <BooleanField source="displayConfig.isFeatured" label="是否推荐" />
       
       <DateField source="createdAt" label="创建时间" showTime />
       <DateField source="updatedAt" label="更新时间" showTime />

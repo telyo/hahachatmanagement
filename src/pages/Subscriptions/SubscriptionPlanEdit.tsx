@@ -44,6 +44,7 @@ import { hasPermission } from '../../utils/permissions';
 import { authUtils } from '../../utils/auth';
 import { useState, useCallback, useEffect } from 'react';
 import apiClient from '../../services/api';
+import { SortableModelChips } from '../../components/SortableModelChips';
 
 export const SubscriptionPlanEdit = () => {
   const notify = useNotify();
@@ -397,6 +398,11 @@ export const SubscriptionPlanEdit = () => {
             {helperText}
           </Typography>
         )}
+        {fieldName === 'supportedModels' && (
+          <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
+            可拖拽排序，顺序将影响 Web 端套餐页的模型展示顺序
+          </Typography>
+        )}
         <Button
           variant="outlined"
           onClick={handleOpen}
@@ -407,19 +413,13 @@ export const SubscriptionPlanEdit = () => {
           {isLoading ? '加载中...' : `选择模型 (已选 ${selectedModels.length} 个)`}
         </Button>
         {selectedModels.length > 0 && (
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
-            {selectedModels.map((modelId: string) => {
-              const model = models.find((m: any) => m.id === modelId);
-              return (
-                <Chip
-                  key={modelId}
-                  label={model ? (model.displayName || model.name) : modelId}
-                  size="small"
-                  onDelete={() => handleToggleModel(modelId)}
-                />
-              );
-            })}
-          </Box>
+          <SortableModelChips
+            selectedModels={selectedModels}
+            models={models}
+            onReorder={(newOrder) => setValue(source, newOrder, { shouldDirty: true })}
+            onDelete={handleToggleModel}
+            sortable={fieldName === 'supportedModels'}
+          />
         )}
 
         <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
@@ -604,6 +604,11 @@ export const SubscriptionPlanEdit = () => {
             {helperText}
           </Typography>
         )}
+        {fieldName === 'supportedModels' && (
+          <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
+            可拖拽排序，顺序将影响 Web 端套餐页的模型展示顺序
+          </Typography>
+        )}
         <Button
           variant="outlined"
           onClick={handleOpen}
@@ -614,19 +619,13 @@ export const SubscriptionPlanEdit = () => {
           {isLoading ? '加载中...' : `选择模型 (已选 ${selectedModels.length} 个)`}
         </Button>
         {selectedModels.length > 0 && (
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
-            {selectedModels.map((modelId: string) => {
-              const model = models.find((m: any) => m.id === modelId);
-              return (
-                <Chip
-                  key={modelId}
-                  label={model ? (model.displayName || model.name) : modelId}
-                  size="small"
-                  onDelete={() => handleToggleModel(modelId)}
-                />
-              );
-            })}
-          </Box>
+          <SortableModelChips
+            selectedModels={selectedModels}
+            models={models}
+            onReorder={(newOrder) => setValue(source, newOrder, { shouldDirty: true })}
+            onDelete={handleToggleModel}
+            sortable={fieldName === 'supportedModels'}
+          />
         )}
 
         <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>

@@ -1,6 +1,10 @@
 export interface Order {
   id: string;
+  orderId: string;
   userId: string;
+  planId?: string;
+  pricingType?: string;
+  billingCycle?: string;
   type: 'subscription' | 'virtual_currency';
   status: 'pending' | 'paid' | 'failed' | 'refunded' | 'partially_refunded';
   amount: number;
@@ -12,6 +16,19 @@ export interface Order {
   refundedAt?: string;
   refundAmount?: number;
   items?: OrderItem[];
+  plan?: OrderPlanInfo;
+  user?: OrderUserInfo;
+}
+
+export interface OrderPlanInfo {
+  planId: string;
+  name: string;
+}
+
+export interface OrderUserInfo {
+  userId: string;
+  email: string;
+  phone?: string;
 }
 
 export interface OrderItem {
