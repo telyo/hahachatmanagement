@@ -47,12 +47,24 @@ export const AIModelTest = () => {
         testMessage: testMessage || 'Hello, this is a test',
       });
 
-      const result = response.data.data;
+      // 与后端 NewSuccessResponse({ message, result }) 对齐：实际测试结果在 data.result
+      const payload = response.data.data;
+      const result = payload?.result ?? payload;
+
+      const r = result as {
+        connected?: boolean;
+        success?: boolean;
+        error?: string;
+        response?: string;
+        testResponse?: string;
+        responseTime?: number;
+        latencyMs?: number;
+      };
       setTestResult({
-        connected: result.connected || result.success || false,
-        responseTime: result.responseTime || result.latencyMs,
-        error: result.error,
-        testResponse: result.testResponse || result.response,
+        connected: Boolean(r.connected || r.success),
+        responseTime: r.responseTime ?? r.latencyMs,
+        error: r.error,
+        testResponse: r.testResponse ?? r.response,
       });
 
       if (result.connected || result.success) {

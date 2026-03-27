@@ -16,7 +16,9 @@ export interface AIModel {
     supportsStreaming: boolean;
     supportsFunctionCalling: boolean;
     supportsVision: boolean;
+    supportsImageGeneration?: boolean;
   };
+  defaultImageGenerationModelId?: string;
   permissions: {
     category: 'common' | 'exclusive' | 'embedding';
   };

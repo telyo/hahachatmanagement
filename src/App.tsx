@@ -24,7 +24,7 @@ import { SubscriptionPlanImportExport } from './pages/Subscriptions/Subscription
 
 
 // AI Models
-import { AIModelList } from './pages/AIModels/AIModelList';
+import { AIModelsPage } from './pages/AIModels/AIModelsPage';
 import { AIModelShow } from './pages/AIModels/AIModelShow';
 import { AIModelCreate } from './pages/AIModels/AIModelCreate';
 import { AIModelEdit } from './pages/AIModels/AIModelEdit';
@@ -132,7 +132,7 @@ function App() {
       />
       <Resource
         name="ai-models"
-        list={AIModelList}
+        list={AIModelsPage}
         show={AIModelShow}
         create={AIModelCreate}
         edit={AIModelEdit}

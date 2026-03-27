@@ -1,4 +1,4 @@
-import { SimpleForm, TextInput, NumberInput, SelectInput, BooleanInput, ArrayInput, SimpleFormIterator, DeleteButton, Toolbar, SaveButton } from 'react-admin';
+import { SimpleForm, TextInput, NumberInput, SelectInput, BooleanInput, DeleteButton, Toolbar, SaveButton } from 'react-admin';
 import { Divider, Typography, Box } from '@mui/material';
 import { ProviderSelector } from '../../components/ProviderSelector';
 import { AIModelIconUpload } from '../../components/AIModelIconUpload';

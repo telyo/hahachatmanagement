@@ -1175,6 +1175,8 @@ function convertAIModelBackendToFrontend(backendData: any): any {
     frontendData.providers = [];
   }
 
+  // defaultImageGenerationModelId 属于模型层字段（如后续需要在详情页展示可在此映射）
+
   if (import.meta.env.DEV) {
     console.log('[dataProvider] AI模型后端数据转换', {
       backend: backendData,
