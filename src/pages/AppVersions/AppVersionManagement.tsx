@@ -261,7 +261,7 @@ export const AppVersionManagement = () => {
       let objectKey: string | undefined;
 
       if (usePresignedURL) {
-        // 使用预签名 URL 直接上传到 R2（绕过 API Gateway 10MB 限制）
+        // 使用预签名 URL 直接上传到 R2（不经应用服务器转传大 body）
         notify('文件较大，使用直接上传方式...', { type: 'info' });
         
         try {
@@ -471,7 +471,7 @@ export const AppVersionManagement = () => {
               console.log('[上传] 检测到可能的 CORS 问题，回退到后端上传方式...');
               notify('直接上传失败（CORS 配置问题），尝试通过后端上传...', { type: 'warning' });
               
-              // 回退到后端上传（注意：可能受 API Gateway 10MB 限制）
+              // 回退到后端上传（若单次请求体过大可能受入口/反代限制）
               try {
                 const formData = new FormData();
                 formData.append('file', file);
@@ -493,7 +493,7 @@ export const AppVersionManagement = () => {
                 const fallbackErr = fallbackError as { response?: { status?: number; data?: { error?: { message?: string } } } };
                 if (fallbackErr.response?.status === 413) {
                   const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
-                  throw new Error(`文件过大（${fileSizeMB}MB）。API Gateway 限制为 10MB。请配置 R2 CORS 以支持直接上传。`);
+                  throw new Error(`文件过大（${fileSizeMB}MB）。经服务端上传可能受入口单次请求大小限制，请配置 R2 CORS 以支持浏览器直传 R2。`);
                 }
                 throw fallbackError;
               }
@@ -564,7 +564,7 @@ export const AppVersionManagement = () => {
                 console.log('[上传] 检测到权限或 CORS 问题，回退到后端上传方式...');
                 notify('直接上传失败（CORS 配置问题），尝试通过后端上传...', { type: 'warning' });
                 
-                // 回退到后端上传（注意：可能受 API Gateway 10MB 限制）
+                // 回退到后端上传（若单次请求体过大可能受入口/反代限制）
                 try {
                   const formData = new FormData();
                   formData.append('file', file);
@@ -586,7 +586,7 @@ export const AppVersionManagement = () => {
                   const fallbackErr = fallbackError as { response?: { status?: number; data?: { error?: { message?: string } } } };
                   if (fallbackErr.response?.status === 413) {
                     const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
-                    throw new Error(`文件过大（${fileSizeMB}MB）。API Gateway 限制为 10MB。请配置 R2 CORS 以支持直接上传，或使用分块上传。`);
+                    throw new Error(`文件过大（${fileSizeMB}MB）。经服务端上传可能受入口单次请求大小限制，请配置 R2 CORS 以直传 R2，或使用分块上传。`);
                   }
                   throw fallbackError;
                 }
@@ -614,7 +614,7 @@ export const AppVersionManagement = () => {
           }
         }
       } else {
-        // 小文件：使用传统方式通过 API Gateway 上传
+        // 小文件：通过后端 multipart 上传
         const formData = new FormData();
         formData.append('file', file);
 
