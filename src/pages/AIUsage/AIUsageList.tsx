@@ -13,13 +13,33 @@ import {
   SelectInput,
   FilterButton,
 } from 'react-admin';
-import { Box, Card, CardContent, Typography, Grid, CircularProgress, ButtonGroup, Button, Alert } from '@mui/material';
+import { Box, Card, CardContent, Typography, Grid, CircularProgress, ButtonGroup, Button, Alert, Tooltip as MuiTooltip } from '@mui/material';
 import { aiUsageService, AIUsageStatistics } from '../../services/aiUsage';
 import { formatUtils } from '../../utils/format';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
+const UserIdField = ({ source }: { source: string }) => {
+  return (
+    <FunctionField
+      source={source}
+      label="用户ID"
+      render={(record: any) => {
+        const uid = record?.[source];
+        if (!uid) return '-';
+        const short = uid.length > 8 ? uid.slice(0, 8) + '…' : uid;
+        return (
+          <MuiTooltip title={uid} arrow placement="top">
+            <span style={{ cursor: 'default', fontFamily: 'monospace', fontSize: '0.85em' }}>{short}</span>
+          </MuiTooltip>
+        );
+      }}
+    />
+  );
+};
+
 const aiUsageFilters = [
   <TextInput key="email" source="email" label="用户邮箱" alwaysOn />,
+  <TextInput key="userId" source="userId" label="用户ID" />,
   <ReferenceInput
     key="modelId"
     source="modelId"
@@ -216,6 +236,7 @@ export const AIUsageList = () => {
       >
         <Datagrid>
           <TextField source="email" label="用户邮箱" />
+          <UserIdField source="userId" />
           <TextField source="modelName" label="模型名称" />
           <NumberField source="inputTokens" label="输入Tokens" />
           <NumberField source="outputTokens" label="输出Tokens" />
