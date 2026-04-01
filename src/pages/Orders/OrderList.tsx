@@ -1,4 +1,4 @@
-import { List, Datagrid, TextField, NumberField, DateField, ShowButton, Filter, TextInput, SelectInput } from 'react-admin';
+import { List, Datagrid, TextField, NumberField, ShowButton, Filter, TextInput, SelectInput, FunctionField } from 'react-admin';
 import { formatUtils } from '../../utils/format';
 
 const OrderFilter = (props: any) => (
@@ -27,7 +27,10 @@ export const OrderList = () => (
       <TextField source="status" label="状态" format={(status) => formatUtils.status(status)} />
       <NumberField source="amount" label="金额" options={{ style: 'currency', currency: 'USD' }} />
       <TextField source="currency" label="货币" />
-      <DateField source="createdAt" label="创建时间" showTime />
+      <FunctionField
+        label="创建时间"
+        render={(record: any) => formatUtils.dateInTimeZone(record?.createdAt)}
+      />
       <ShowButton />
     </Datagrid>
   </List>

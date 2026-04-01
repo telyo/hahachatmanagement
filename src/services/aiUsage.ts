@@ -3,6 +3,7 @@ import apiClient from './api';
 export interface AIUsage {
   id: string;
   userId: string;
+  email?: string;
   modelId: string;
   modelName: string;
   requestId: string;

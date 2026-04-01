@@ -15,7 +15,7 @@ import { useEffect, useState } from 'react';
 import { useRecordContext, useGetOne } from 'react-admin';
 import { useParams } from 'react-router-dom';
 import apiClient from '../../services/api';
-import { Box, Table, TableBody, TableCell, TableHead, TableRow, IconButton, CircularProgress, Alert, Typography, TextField, Button, Paper } from '@mui/material';
+import { Box, Table, TableBody, TableCell, TableHead, TableRow, IconButton, CircularProgress, Alert, Typography, TextField as MuiTextField, Button, Paper } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -278,7 +278,7 @@ const CreditsDetailsTab = ({ userId }: { userId: string }) => {
           
           {/* 时间段选择器 */}
           <Box sx={{ display: 'flex', gap: 2, mb: 3, alignItems: 'center', flexWrap: 'wrap' }}>
-            <TextField
+            <MuiTextField
               label="开始日期"
               type="date"
               value={startDate}
@@ -288,7 +288,7 @@ const CreditsDetailsTab = ({ userId }: { userId: string }) => {
               }}
               size="small"
             />
-            <TextField
+            <MuiTextField
               label="结束日期"
               type="date"
               value={endDate}

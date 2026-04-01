@@ -7,6 +7,33 @@ export const formatUtils = {
     return format(new Date(date), pattern, { locale: zhCN });
   },
 
+  dateInTimeZone: (
+    date: string | Date,
+    timeZone: string = 'Asia/Shanghai',
+    locale: string = 'zh-CN'
+  ): string => {
+    if (!date) return '-';
+    const d = new Date(date);
+    if (Number.isNaN(d.getTime())) return '-';
+
+    const parts = new Intl.DateTimeFormat(locale, {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    }).formatToParts(d);
+
+    const map: Record<string, string> = {};
+    for (const p of parts) {
+      if (p.type !== 'literal') map[p.type] = p.value;
+    }
+    return `${map.year}-${map.month}-${map.day} ${map.hour}:${map.minute}:${map.second}`;
+  },
+
   relativeTime: (date: string | Date): string => {
     if (!date) return '-';
     return formatDistanceToNow(new Date(date), { addSuffix: true, locale: zhCN });

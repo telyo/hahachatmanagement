@@ -13,7 +13,7 @@ import UserEdit from './pages/Users/UserEdit';
 
 // Orders
 import { OrderList } from './pages/Orders/OrderList';
-import { OrderShow } from './pages/Orders/OrderShow';
+import { OrderShow } from './pages/Orders/OrderShow.tsx';
 
 // Subscriptions
 import { SubscriptionPlanList } from './pages/Subscriptions/SubscriptionPlanList';
@@ -38,7 +38,7 @@ import { FeedbackList } from './pages/Feedback/FeedbackList';
 import FeedbackShow from './pages/Feedback/FeedbackShow';
 
 // Audit Logs
-import { AuditLogList } from './pages/AuditLogs/AuditLogList';
+import { AuditLogList } from './pages/AuditLogs/AuditLogList.tsx';
 
 // API Logger
 import { APILoggerConfigList } from './pages/APILogger/APILoggerConfig';
@@ -85,8 +85,6 @@ import ChatIcon from '@mui/icons-material/Chat';
 import SettingsIcon from '@mui/icons-material/Settings';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import CloudIcon from '@mui/icons-material/Cloud';
-import SearchIcon from '@mui/icons-material/Search';
-import SystemUpdateIcon from '@mui/icons-material/SystemUpdate';
 
 function App() {
   // 调试信息：确认 App 组件已渲染

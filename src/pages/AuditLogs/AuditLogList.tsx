@@ -1,8 +1,8 @@
 import { List, Datagrid, TextField, EmailField, DateField, Filter, TextInput, SelectInput, FunctionField } from 'react-admin';
 import { formatUtils } from '../../utils/format';
 import { useState } from 'react';
-import { IconButton, Box } from '@mui/material';
-import { Visibility as VisibilityIcon } from '@mui/icons-material';
+import { IconButton, Box, Dialog, DialogTitle, DialogContent, DialogActions, Button, Stack, Typography, Divider } from '@mui/material';
+import { Visibility as VisibilityIcon, InfoOutlined as InfoOutlinedIcon } from '@mui/icons-material';
 import { RequestParamsDialog } from './RequestParamsDialog';
 
 const AuditLogFilter = (props: Record<string, unknown>) => (
@@ -71,6 +71,26 @@ const resourceMap: Record<string, string> = {
 export const AuditLogList = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogParams, setDialogParams] = useState<string | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailRecord, setDetailRecord] = useState<any>(null);
+
+  const prettyJson = (value: any) => {
+    if (value == null) return '';
+    if (typeof value !== 'string') {
+      try {
+        return JSON.stringify(value, null, 2);
+      } catch {
+        return String(value);
+      }
+    }
+    const s = value.trim();
+    if (!s) return '';
+    try {
+      return JSON.stringify(JSON.parse(s), null, 2);
+    } catch {
+      return value;
+    }
+  };
 
   return (
     <>
@@ -84,6 +104,23 @@ export const AuditLogList = () => {
           <TextField source="status" label="状态" transform={(status: string) => formatUtils.status(status)} />
           <TextField source="ipAddress" label="IP地址" />
           <DateField source="createdAt" label="时间" showTime />
+          <FunctionField
+            label="详情"
+            render={(record: any) => (
+              <IconButton
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDetailRecord(record);
+                  setDetailOpen(true);
+                }}
+                size="small"
+                title="查看详情"
+                sx={{ color: 'text.secondary' }}
+              >
+                <InfoOutlinedIcon fontSize="small" />
+              </IconButton>
+            )}
+          />
           <FunctionField
             label="请求参数"
             render={(record: any) => {
@@ -122,6 +159,72 @@ export const AuditLogList = () => {
         onClose={() => setDialogOpen(false)}
         requestParams={dialogParams}
       />
+
+      <Dialog
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>操作日志详情</DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={1.25}>
+            <Typography variant="body2"><strong>日志ID：</strong>{detailRecord?.id || detailRecord?.logId || '-'}</Typography>
+            <Typography variant="body2"><strong>管理员邮箱：</strong>{detailRecord?.adminEmail || '-'}</Typography>
+            <Typography variant="body2"><strong>操作：</strong>{actionMap[detailRecord?.action] || detailRecord?.action || '-'}</Typography>
+            <Typography variant="body2"><strong>资源类型：</strong>{resourceMap[detailRecord?.resource] || detailRecord?.resource || '-'}</Typography>
+            <Typography variant="body2"><strong>资源ID：</strong>{detailRecord?.resourceId || '-'}</Typography>
+            <Typography variant="body2"><strong>状态：</strong>{detailRecord?.status ? formatUtils.status(detailRecord.status) : '-'}</Typography>
+            {detailRecord?.errorMessage ? (
+              <Typography variant="body2" color="error"><strong>错误信息：</strong>{detailRecord.errorMessage}</Typography>
+            ) : null}
+            <Typography variant="body2"><strong>IP：</strong>{detailRecord?.ipAddress || '-'}</Typography>
+            <Typography variant="body2"><strong>User-Agent：</strong>{detailRecord?.userAgent || '-'}</Typography>
+            <Typography variant="body2"><strong>时间：</strong>{detailRecord?.createdAt || '-'}</Typography>
+
+            <Divider />
+
+            <Typography variant="subtitle2">Details</Typography>
+            <Box
+              component="pre"
+              sx={{
+                m: 0,
+                p: 1.25,
+                bgcolor: 'background.default',
+                borderRadius: 1,
+                border: '1px solid',
+                borderColor: 'divider',
+                overflow: 'auto',
+                fontSize: 12,
+                lineHeight: 1.5,
+              }}
+            >
+              {prettyJson(detailRecord?.details) || '-'}
+            </Box>
+
+            <Typography variant="subtitle2">Request Params</Typography>
+            <Box
+              component="pre"
+              sx={{
+                m: 0,
+                p: 1.25,
+                bgcolor: 'background.default',
+                borderRadius: 1,
+                border: '1px solid',
+                borderColor: 'divider',
+                overflow: 'auto',
+                fontSize: 12,
+                lineHeight: 1.5,
+              }}
+            >
+              {prettyJson(detailRecord?.requestParams) || '-'}
+            </Box>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDetailOpen(false)}>关闭</Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };

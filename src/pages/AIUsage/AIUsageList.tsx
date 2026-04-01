@@ -4,24 +4,33 @@ import {
   Datagrid,
   TextField,
   NumberField,
-  DateField,
-  Filter,
   TextInput,
   useNotify,
   TopToolbar,
   ExportButton,
+  FunctionField,
+  ReferenceInput,
+  SelectInput,
+  FilterButton,
 } from 'react-admin';
 import { Box, Card, CardContent, Typography, Grid, CircularProgress, ButtonGroup, Button, Alert } from '@mui/material';
 import { aiUsageService, AIUsageStatistics } from '../../services/aiUsage';
 import { formatUtils } from '../../utils/format';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
-const AIUsageFilter = (props: any) => (
-  <Filter {...props}>
-    <TextInput source="userId" label="用户ID" />
-    <TextInput source="modelId" label="模型ID" />
-  </Filter>
-);
+const aiUsageFilters = [
+  <TextInput key="email" source="email" label="用户邮箱" alwaysOn />,
+  <ReferenceInput
+    key="modelId"
+    source="modelId"
+    reference="ai-models"
+    label="模型名称"
+    perPage={100}
+    sort={{ field: 'displayConfig.sortOrder', order: 'ASC' }}
+  >
+    <SelectInput optionText="displayName" optionValue="id" emptyText="全部模型" />
+  </ReferenceInput>,
+];
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
@@ -36,6 +45,22 @@ export const AIUsageList = () => {
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState<'today' | '7d' | '30d'>('7d');
   const notify = useNotify();
+
+  const formatBeijingDateTime = (value: any) => {
+    if (!value) return '-';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return String(value);
+    return new Intl.DateTimeFormat('zh-CN', {
+      timeZone: 'Asia/Shanghai',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    }).format(d);
+  };
 
   const { startTime, endTime } = useMemo(() => {
     const end = new Date();
@@ -178,10 +203,11 @@ export const AIUsageList = () => {
       )}
 
       <List
-        filters={<AIUsageFilter />}
+        filters={aiUsageFilters}
         filter={{ startTime, endTime }}
         actions={
           <TopToolbar>
+            <FilterButton filters={aiUsageFilters} />
             <ExportButton />
           </TopToolbar>
         }
@@ -189,13 +215,16 @@ export const AIUsageList = () => {
         empty={<AIUsageEmpty />}
       >
         <Datagrid>
-          <TextField source="userId" label="用户ID" />
+          <TextField source="email" label="用户邮箱" />
           <TextField source="modelName" label="模型名称" />
           <NumberField source="inputTokens" label="输入Tokens" />
           <NumberField source="outputTokens" label="输出Tokens" />
           <NumberField source="totalTokens" label="总Tokens" />
           <NumberField source="cost" label="成本（积分）" />
-          <DateField source="createdAt" label="时间" showTime />
+          <FunctionField
+            label="时间（北京时间）"
+            render={(record: any) => formatBeijingDateTime(record?.createdAt)}
+          />
         </Datagrid>
       </List>
     </>

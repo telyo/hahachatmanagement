@@ -12,6 +12,8 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
+    // 关键：当使用无后缀 import 时，优先命中 TS/TSX，避免同名 .js 抢占解析
+    extensions: ['.tsx', '.ts', '.jsx', '.js', '.mjs', '.cjs', '.json'],
   },
   server: {
     port: 3000,
