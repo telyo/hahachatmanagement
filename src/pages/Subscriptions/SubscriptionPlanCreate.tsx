@@ -177,7 +177,7 @@ export const SubscriptionPlanCreate = () => {
     }
     
     // 清理字符串字段，将 undefined 转为 null
-    const stringFields = ['type', 'currency', 'displayPrice', 'savedLabel', 'renewLabel', 'icon'];
+    const stringFields = ['type', 'currency', 'displayPrice', 'savedLabel', 'renewLabel', 'icon', 'iosProductId'];
     stringFields.forEach(field => {
       if (field in cleaned && cleaned[field] === undefined) {
         cleaned[field] = null;
@@ -202,7 +202,7 @@ export const SubscriptionPlanCreate = () => {
     // React Admin 的 ArrayInput 有时会将数据扁平化
     const pricingFields = ['type', 'price', 'currency', 'displayPrice', 'originalPrice', 'savedAmount', 
                           'savedLabel', 'autoRenew', 'renewLabel', 'icon', 'benefits', 'advantages', 
-                          'supportedModels', 'exclusiveModels'];
+                          'supportedModels', 'exclusiveModels', 'iosProductId'];
     
     // 检查顶层是否有 pricing 相关字段
     const hasTopLevelPricingFields = pricingFields.some(field => data[field] !== undefined);
@@ -710,6 +710,14 @@ export const SubscriptionPlanCreate = () => {
                   fullWidth 
                   helperText="如：Pro, Max, Ultra"
                   defaultValue="Pro"
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextInput
+                  source={getSource?.('iosProductId') || ''}
+                  label="iOS 商品ID"
+                  fullWidth
+                  helperText="如：hahachat.ai.app.monthly_pro / hahachat.ai.app.monthly_max / hahachat.ai.app.monthly_ultra"
                 />
               </Grid>
               <Grid item xs={12} md={6}>

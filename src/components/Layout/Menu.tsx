@@ -43,6 +43,15 @@ export const Menu = () => {
           leftIcon={<span>👥</span>}
         />
       )}
+
+      {/* 测试用户管理（复用 users 权限） */}
+      {canAccessResource(permissions, 'users', userRole) && (
+        <RAdminMenu.Item
+          to="/test-accounts"
+          primaryText="测试用户管理"
+          leftIcon={<span>🧪</span>}
+        />
+      )}
       
       {/* 订单管理 */}
       {canAccessResource(permissions, 'orders', userRole) && (

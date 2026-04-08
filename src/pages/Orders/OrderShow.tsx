@@ -304,6 +304,7 @@ export const OrderShow = () => (
       <NumberField source="amount" label="金额" options={{ style: 'currency', currency: 'USD' }} />
       <TextField source="currency" label="货币" />
       <TextField source="paymentMethod" label="支付方式" />
+      <TextField source="paymentProvider" label="订单来源" />
       <FunctionField
         label="创建时间"
         render={(record: any) => formatUtils.dateInTimeZone(record?.createdAt)}

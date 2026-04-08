@@ -87,6 +87,12 @@ export const SubscriptionPlanShow = () => {
                           <Typography variant="body2" color="text.secondary">自动续费</Typography>
                           <Typography variant="body1">{pricingItem.autoRenew ? '是' : '否'}</Typography>
                         </Grid>
+                        {pricingItem.iosProductId && (
+                          <Grid item xs={12}>
+                            <Typography variant="body2" color="text.secondary">iOS 商品ID</Typography>
+                            <Typography variant="body1">{pricingItem.iosProductId}</Typography>
+                          </Grid>
+                        )}
                         {pricingItem.renewLabel && (
                           <Grid item xs={12}>
                             <Typography variant="body2" color="text.secondary">续费说明</Typography>

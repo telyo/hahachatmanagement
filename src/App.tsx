@@ -85,6 +85,13 @@ import ChatIcon from '@mui/icons-material/Chat';
 import SettingsIcon from '@mui/icons-material/Settings';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import CloudIcon from '@mui/icons-material/Cloud';
+import ScienceIcon from '@mui/icons-material/Science';
+
+// Test Accounts
+import { TestAccountList } from './pages/TestAccounts/TestAccountList';
+import { TestAccountShow } from './pages/TestAccounts/TestAccountShow';
+import { TestAccountCreate } from './pages/TestAccounts/TestAccountCreate';
+import { TestAccountEdit } from './pages/TestAccounts/TestAccountEdit';
 
 function App() {
   // 调试信息：确认 App 组件已渲染
@@ -111,6 +118,15 @@ function App() {
         edit={UserEdit}
         icon={PeopleIcon}
         options={{ label: '用户管理' }}
+      />
+      <Resource
+        name="test-accounts"
+        list={TestAccountList}
+        show={TestAccountShow}
+        create={TestAccountCreate}
+        edit={TestAccountEdit}
+        icon={ScienceIcon}
+        options={{ label: '测试用户管理' }}
       />
       <Resource
         name="orders"

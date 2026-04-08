@@ -20,6 +20,7 @@ export interface PricingItem {
   type: string; // 套餐类型，如 "Pro", "Max", "Ultra"
   renewLabel?: string;
   icon?: string; // 图标URL
+  iosProductId?: string; // iOS IAP 商品ID（用于内购发放）
   supportedModels?: string[];
   exclusiveModels?: string[];
   benefits?: PricingBenefits; // 权益（嵌套在 pricing 项内）

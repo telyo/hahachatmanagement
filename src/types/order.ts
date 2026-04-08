@@ -10,6 +10,7 @@ export interface Order {
   amount: number;
   currency: string;
   paymentMethod?: string;
+  paymentProvider?: 'airwallex' | 'apple' | 'googleplay' | string;
   createdAt: string;
   updatedAt: string;
   paidAt?: string;

@@ -174,6 +174,7 @@ function ensureIdField(item: any, resource?: string): any {
 // 资源名称到 API 路径的映射
 const resourceMap: Record<string, string> = {
   users: 'users',
+  'test-accounts': 'test-accounts',
   orders: 'orders',
   'subscription-plans': 'subscriptions/plans',
   'ai-models': 'ai/models',
@@ -517,6 +518,15 @@ export const dataProvider: DataProvider = {
     if (resource === 'ai-models') {
       requestData = convertAIModelFrontendToBackendRequest(params.data);
     }
+    // 测试用户：将前端表单字段映射到后端期望的结构
+    if (resource === 'test-accounts') {
+      const d: any = params.data || {};
+      requestData = {
+        email: d.email,
+        fixedLoginCode: d.fixedLoginCode,
+        initialCredits: d.initialCredits ?? 0,
+      };
+    }
     
     // 清理数据：移除 undefined 字段，避免序列化问题
     const cleanData = (obj: any): any => {
@@ -661,6 +671,14 @@ export const dataProvider: DataProvider = {
     if (resource === 'ai-models') {
       requestData = convertAIModelFrontendUpdateToBackendRequest(params.data);
     }
+    // 测试用户：后端 update 只接受 status 与 fixedLoginCode
+    if (resource === 'test-accounts') {
+      const d: any = params.data || {};
+      const out: any = {};
+      if (d.status) out.status = d.status;
+      if (d.fixedLoginCode) out.fixedLoginCode = d.fixedLoginCode;
+      requestData = out;
+    }
     // 注意：subscription-plans 的转换在后端处理，前端直接发送扁平数据
     
     console.log('[dataProvider] update 请求:', { resource, url, requestData });
@@ -687,6 +705,14 @@ export const dataProvider: DataProvider = {
       // 确保返回的数据有 id 字段（React Admin 要求）
       let responseData = json.data || {};
       responseData = ensureIdField(responseData, resource);
+
+      // 兜底：部分后端 update 接口只返回 success/message，不回传更新后的实体。
+      // React Admin 需要 update 返回的 record 来更新缓存，否则 UI 会继续显示旧值。
+      if (!responseData || !responseData.id) {
+        const prev: any = (params as any).previousData || {};
+        const patch: any = (params as any).data || {};
+        responseData = ensureIdField({ ...prev, ...patch, id: params.id }, resource);
+      }
       
       // 如果是 AI 模型，需要将后端嵌套结构转换为前端扁平结构
       if (resource === 'ai-models') {
