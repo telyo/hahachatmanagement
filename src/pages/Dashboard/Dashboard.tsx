@@ -126,6 +126,7 @@ export const Dashboard = () => {
   const newCount = (statistics?.users?.newInRange ?? statistics?.users?.newToday) ?? 0;
   const revenueCount = (statistics?.revenue?.revenueInRange ?? statistics?.revenue?.today) ?? 0;
   const requestsCount = statistics?.ai?.requestsToday ?? 0;
+  const activeCount = statistics?.users?.dailyActive?.total ?? 0;
 
   // 使用真实数据或模拟数据
   const userGrowthData = statistics?.users?.growth || [
@@ -153,8 +154,10 @@ export const Dashboard = () => {
   ];
 
   const topModelsData = statistics?.ai?.topModels || [];
+  const activeVersionData = statistics?.users?.dailyActive?.byVersion || [];
+  const activeDeviceData = statistics?.users?.dailyActive?.byDevice || [];
 
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#a4de6c', '#d0ed57'];
 
   // 检查权限
   if (!canAccessDashboard) {
@@ -252,7 +255,7 @@ export const Dashboard = () => {
       )}
 
       <Grid container spacing={3} sx={{ mt: 2 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={2.4}>
           <StatCard
             title="总用户数"
             value={totalUsers.toLocaleString()}
@@ -260,7 +263,7 @@ export const Dashboard = () => {
             color="primary.main"
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={2.4}>
           <StatCard
             title={isTodayRange ? '今日新增' : '时段内新增'}
             value={newCount.toLocaleString()}
@@ -268,7 +271,7 @@ export const Dashboard = () => {
             color="success.main"
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={2.4}>
           <StatCard
             title={isTodayRange ? '今日收入' : '时段内收入'}
             value={formatUtils.currency(revenueCount)}
@@ -276,7 +279,7 @@ export const Dashboard = () => {
             color="warning.main"
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={2.4}>
           <StatCard
             title={isTodayRange ? '今日AI请求' : '时段内AI请求'}
             value={requestsCount.toLocaleString()}
@@ -284,7 +287,17 @@ export const Dashboard = () => {
             color="info.main"
           />
         </Grid>
+        <Grid item xs={12} sm={6} md={2.4}>
+          <StatCard
+            title={isTodayRange ? '今日活跃用户' : '时段活跃用户'}
+            value={activeCount.toLocaleString()}
+            icon={PeopleIcon}
+            color="secondary.main"
+          />
+        </Grid>
+      </Grid>
 
+      <Grid container spacing={3} sx={{ mt: 1 }}>
         <Grid item xs={12} md={6}>
           <Card>
             <CardContent>
@@ -320,6 +333,64 @@ export const Dashboard = () => {
                   <Legend />
                   <Line type="monotone" dataKey="amount" stroke="#82ca9d" name="收入" />
                 </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                活跃版本占比
+              </Typography>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={activeVersionData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="count"
+                  >
+                    {activeVersionData.map((entry, index) => (
+                      <Cell key={`version-cell-${entry.name}-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                活跃设备占比
+              </Typography>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={activeDeviceData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="count"
+                  >
+                    {activeDeviceData.map((entry, index) => (
+                      <Cell key={`device-cell-${entry.name}-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>

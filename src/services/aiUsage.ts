@@ -4,6 +4,9 @@ export interface AIUsage {
   id: string;
   userId: string;
   email?: string;
+  deviceType?: string;
+  appVersion?: string;
+  osVersion?: string;
   modelId: string;
   modelName: string;
   requestId: string;
@@ -33,6 +36,8 @@ export interface AIUsageStatistics {
   successRequests?: number;
   failedRequests?: number;
   byProvider?: Record<string, any>;
+  byVersion?: Record<string, { totalRequests: number }>;
+  byDevice?: Record<string, { totalRequests: number }>;
   byModel: {
     modelId: string;
     modelName: string;

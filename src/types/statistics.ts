@@ -4,6 +4,17 @@ export interface Statistics {
     newToday: number;
     newInRange?: number; // 指定时间段内新增用户数
     activeToday: number;
+    dailyActive: {
+      total: number;
+      byVersion: {
+        name: string;
+        count: number;
+      }[];
+      byDevice: {
+        name: string;
+        count: number;
+      }[];
+    };
     growth: {
       date: string;
       count: number;

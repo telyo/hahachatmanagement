@@ -96,6 +96,24 @@ export const AIUsageList = () => {
     return { startTime: startMs, endTime: endMs };
   }, [dateRange]);
 
+  const versionDistributionData = useMemo(
+    () =>
+      Object.entries(statistics?.byVersion || {}).map(([name, value]) => ({
+        name,
+        value: value?.totalRequests || 0,
+      })),
+    [statistics?.byVersion]
+  );
+
+  const deviceDistributionData = useMemo(
+    () =>
+      Object.entries(statistics?.byDevice || {}).map(([name, value]) => ({
+        name,
+        value: value?.totalRequests || 0,
+      })),
+    [statistics?.byDevice]
+  );
+
   useEffect(() => {
     const fetchStatistics = async () => {
       try {
@@ -219,6 +237,67 @@ export const AIUsageList = () => {
               </Grid>
             </Grid>
           )}
+
+          {(versionDistributionData.length > 0 || deviceDistributionData.length > 0) && (
+            <Grid container spacing={3} sx={{ mb: 3 }}>
+              <Grid item xs={12} md={6}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      按版本分布（请求数）
+                    </Typography>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <PieChart>
+                        <Pie
+                          data={versionDistributionData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {versionDistributionData.map((entry, index) => (
+                            <Cell key={`version-cell-${entry.name}-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      按设备分布（请求数）
+                    </Typography>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <PieChart>
+                        <Pie
+                          data={deviceDistributionData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {deviceDistributionData.map((entry, index) => (
+                            <Cell key={`device-cell-${entry.name}-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+          )}
         </Box>
       )}
 
@@ -238,6 +317,9 @@ export const AIUsageList = () => {
           <TextField source="email" label="用户邮箱" />
           <UserIdField source="userId" />
           <TextField source="modelName" label="模型名称" />
+          <TextField source="appVersion" label="版本" />
+          <TextField source="deviceType" label="设备" />
+          <TextField source="osVersion" label="系统版本" />
           <NumberField source="inputTokens" label="输入Tokens" />
           <NumberField source="outputTokens" label="输出Tokens" />
           <NumberField source="totalTokens" label="总Tokens" />
