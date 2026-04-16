@@ -2,7 +2,6 @@ import {
   Show,
   SimpleShowLayout,
   TextField,
-  NumberField,
   DateField,
   Button,
   FunctionField,
@@ -301,7 +300,10 @@ export const OrderShow = () => (
       }} />
       <TextField source="type" label="订单类型" />
       <TextField source="status" label="状态" format={(status: string) => status ? formatUtils.status(status) : '-'} />
-      <NumberField source="amount" label="金额" options={{ style: 'currency', currency: 'USD' }} />
+      <FunctionField
+        label="金额"
+        render={(record: any) => formatUtils.currency(Number(record?.amount || 0), record?.currency || 'USD')}
+      />
       <TextField source="currency" label="货币" />
       <TextField source="paymentMethod" label="支付方式" />
       <TextField source="paymentProvider" label="订单来源" />
@@ -311,7 +313,10 @@ export const OrderShow = () => (
       />
       <DateField source="paidAt" label="支付时间" showTime />
       <DateField source="refundedAt" label="退款时间" showTime />
-      <NumberField source="refundAmount" label="退款金额" options={{ style: 'currency', currency: 'USD' }} />
+      <FunctionField
+        label="退款金额"
+        render={(record: any) => formatUtils.currency(Number(record?.refundAmount || 0), record?.currency || 'USD')}
+      />
     </SimpleShowLayout>
   </Show>
 );

@@ -1,4 +1,4 @@
-import { List, Datagrid, TextField, NumberField, ShowButton, Filter, TextInput, SelectInput, FunctionField } from 'react-admin';
+import { List, Datagrid, TextField, ShowButton, Filter, TextInput, SelectInput, FunctionField } from 'react-admin';
 import { formatUtils } from '../../utils/format';
 import { Tooltip, Typography } from '@mui/material';
 
@@ -68,7 +68,10 @@ export const OrderList = () => (
       <TextField source="type" label="订单类型" />
       <TextField source="status" label="状态" format={(status) => formatUtils.status(status)} />
       <TextField source="paymentProvider" label="来源" />
-      <NumberField source="amount" label="金额" options={{ style: 'currency', currency: 'USD' }} />
+      <FunctionField
+        label="金额"
+        render={(record: any) => formatUtils.currency(Number(record?.amount || 0), record?.currency || 'USD')}
+      />
       <TextField source="currency" label="货币" />
       <FunctionField
         label="创建时间"
