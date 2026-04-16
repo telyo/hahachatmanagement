@@ -32,6 +32,7 @@ import { useNotify, usePermissions } from 'react-admin';
 import apiClient from '../../services/api';
 import { hasPermission } from '../../utils/permissions';
 import { authUtils } from '../../utils/auth';
+import CryptoJS from 'crypto-js';
 
 interface AppVersionData {
   platform: string;
@@ -285,9 +286,19 @@ export const AppVersionManagement = () => {
           // 2. 计算文件校验和（在客户端计算）
           console.log('[上传] 开始计算文件校验和，文件大小:', file.size);
           const fileBuffer = await file.arrayBuffer();
-          const hashBuffer = await crypto.subtle.digest('SHA-256', fileBuffer);
-          const hashArray = Array.from(new Uint8Array(hashBuffer));
-          checksum = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+          // WebCrypto 仅在安全上下文下可用；在 http/非安全环境可能出现 crypto.subtle 为 undefined
+          const subtle = globalThis.crypto?.subtle;
+          if (subtle?.digest) {
+            const hashBuffer = await subtle.digest('SHA-256', fileBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            checksum = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+          } else {
+            console.warn('[上传] crypto.subtle 不可用，使用 crypto-js 计算 SHA-256（可能是非安全上下文）');
+            const wordArray = CryptoJS.lib.WordArray.create(
+              new Uint8Array(fileBuffer) as unknown as number[],
+            );
+            checksum = CryptoJS.SHA256(wordArray).toString(CryptoJS.enc.Hex);
+          }
           fileSize = file.size;
           console.log('[上传] 校验和计算完成:', checksum);
           

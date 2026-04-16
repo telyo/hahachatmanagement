@@ -61,6 +61,14 @@ interface InviteConfig {
   updatedAt: string;
 }
 
+interface RegisterCreditConfig {
+  configId: string;
+  amount: number;
+  creditValidityDays: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface RedeemCodeUsage {
   code: string;
   userEmail: string;
@@ -90,6 +98,11 @@ export const CreditExchangeManagement = () => {
   const [redeemCodes, setRedeemCodes] = useState<RedeemCode[]>([]);
   const [redeemCodesLoading, setRedeemCodesLoading] = useState(false);
   const rowsPerPage = 20;
+
+  // 注册初始积分配置
+  const [registerCreditConfig, setRegisterCreditConfig] = useState<RegisterCreditConfig | null>(null);
+  const [registerCreditLoading, setRegisterCreditLoading] = useState(false);
+  const [registerCreditSaving, setRegisterCreditSaving] = useState(false);
 
   // 邀请配置
   const [inviteConfig, setInviteConfig] = useState<InviteConfig | null>(null);
@@ -136,6 +149,29 @@ export const CreditExchangeManagement = () => {
     }
   }, [canRead, notify]);
 
+  const loadRegisterCreditConfig = useCallback(async () => {
+    if (!canRead) return;
+    try {
+      setRegisterCreditLoading(true);
+      const response = await apiClient.get('/admin/credit-exchange/register-credit-config');
+      const data = response.data?.data || {};
+      setRegisterCreditConfig({
+        configId: data.configId || 'register_credit_config',
+        amount: data.amount ?? 0,
+        creditValidityDays: data.creditValidityDays ?? 0,
+        createdAt: data.createdAt || '',
+        updatedAt: data.updatedAt || '',
+      });
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: { message?: string }; message?: string } } };
+      notify(err.response?.data?.error?.message || err.response?.data?.message || '加载注册初始积分配置失败', {
+        type: 'error',
+      });
+    } finally {
+      setRegisterCreditLoading(false);
+    }
+  }, [canRead, notify]);
+
   const loadInviteConfig = useCallback(async () => {
     if (!canRead) return;
     try {
@@ -167,6 +203,12 @@ export const CreditExchangeManagement = () => {
       loadRedeemCodes();
     }
   }, [canRead, loadRedeemCodes]);
+
+  useEffect(() => {
+    if (canRead) {
+      loadRegisterCreditConfig();
+    }
+  }, [canRead, loadRegisterCreditConfig]);
 
   useEffect(() => {
     if (canRead) {
@@ -304,6 +346,27 @@ export const CreditExchangeManagement = () => {
     } catch (error: unknown) {
       const err = error as { response?: { data?: { error?: { message?: string } } } };
       notify(err.response?.data?.error?.message || err.response?.data?.message || '删除失败', { type: 'error' });
+    }
+  };
+
+  const handleSaveRegisterCreditConfig = async () => {
+    if (!registerCreditConfig || !canWrite) {
+      notify('无权限修改配置', { type: 'error' });
+      return;
+    }
+    try {
+      setRegisterCreditSaving(true);
+      await apiClient.put('/admin/credit-exchange/register-credit-config', {
+        amount: registerCreditConfig.amount,
+        creditValidityDays: registerCreditConfig.creditValidityDays ?? 0,
+      });
+      notify('注册初始积分配置保存成功', { type: 'success' });
+      loadRegisterCreditConfig();
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: { message?: string } } } };
+      notify(err.response?.data?.error?.message || err.response?.data?.message || '保存失败', { type: 'error' });
+    } finally {
+      setRegisterCreditSaving(false);
     }
   };
 
@@ -477,6 +540,77 @@ export const CreditExchangeManagement = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* 注册初始积分配置 */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            注册初始积分配置
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            新用户注册后自动发放的积分，与邮箱绑定（同一邮箱只发放一次，防止删号重注册刷积分）。积分数额为 0 表示不发放。
+          </Typography>
+
+          {registerCreditLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : registerCreditConfig ? (
+            <Stack spacing={3} sx={{ maxWidth: 400 }}>
+              <TextField
+                label="注册初始积分数额"
+                type="number"
+                value={registerCreditConfig.amount}
+                onChange={(e) =>
+                  setRegisterCreditConfig((prev) =>
+                    prev ? { ...prev, amount: parseInt(e.target.value, 10) || 0 } : prev
+                  )
+                }
+                disabled={!canWrite}
+                inputProps={{ min: 0 }}
+                helperText="新用户注册时发放的积分数额，0 表示不发放"
+              />
+              <TextField
+                label="积分有效期（天）"
+                type="number"
+                value={registerCreditConfig.creditValidityDays || ''}
+                onChange={(e) =>
+                  setRegisterCreditConfig((prev) =>
+                    prev ? { ...prev, creditValidityDays: parseInt(e.target.value, 10) || 0 } : prev
+                  )
+                }
+                disabled={!canWrite}
+                inputProps={{ min: 0 }}
+                helperText="0 表示永不过期；到期时间 = 注册时间 + 有效天数"
+              />
+              {canWrite && (
+                <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+                  <Button
+                    variant="outlined"
+                    startIcon={<RefreshIcon />}
+                    onClick={loadRegisterCreditConfig}
+                    disabled={registerCreditSaving || registerCreditLoading}
+                  >
+                    重置
+                  </Button>
+                  <Button
+                    variant="contained"
+                    startIcon={<SaveIcon />}
+                    onClick={handleSaveRegisterCreditConfig}
+                    disabled={registerCreditSaving || registerCreditLoading}
+                  >
+                    {registerCreditSaving ? '保存中...' : '保存配置'}
+                  </Button>
+                </Stack>
+              )}
+            </Stack>
+          ) : (
+            <Alert severity="error">无法加载注册初始积分配置</Alert>
+          )}
+        </CardContent>
+      </Card>
+
+      <Divider sx={{ mb: 3 }} />
 
       {/* 邀请规则配置 */}
       <Card>

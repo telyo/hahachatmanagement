@@ -431,15 +431,15 @@ const UserEdit = () => {
   // 获取用户ID - 从多个来源获取
   const userId = (record?.id || record?.userId || id) as string;
   
-  // 如果 useRecordContext 没有数据，使用 useGetOne 获取
+  // 始终拉取最新用户详情，避免 recordContext 旧缓存导致“操作成功但页面不更新”
   const { data: fetchedRecord, isLoading } = useGetOne(
     'users',
     { id: userId },
-    { enabled: !!userId && !record }
+    { enabled: !!userId }
   );
   
-  // 使用 fetchedRecord 或 record
-  const displayRecord = record || fetchedRecord;
+  // 优先使用最新拉取的数据，其次回退到 recordContext
+  const displayRecord = fetchedRecord || record;
   
   // 调试：输出记录数据
   useEffect(() => {
