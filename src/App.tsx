@@ -36,6 +36,9 @@ import { AIUsageList } from './pages/AIUsage/AIUsageList';
 // Feedback
 import { FeedbackList } from './pages/Feedback/FeedbackList';
 import FeedbackShow from './pages/Feedback/FeedbackShow';
+import { MessageList } from './pages/Messages/MessageList';
+import { MessageCreate } from './pages/Messages/MessageCreate';
+import { MessageShow } from './pages/Messages/MessageShow';
 
 // Audit Logs
 import { AuditLogList } from './pages/AuditLogs/AuditLogList.tsx';
@@ -168,6 +171,14 @@ function App() {
         show={FeedbackShow}
         icon={FeedbackIcon}
         options={{ label: '反馈管理' }}
+      />
+      <Resource
+        name="messages"
+        list={MessageList}
+        show={MessageShow}
+        create={MessageCreate}
+        icon={FeedbackIcon}
+        options={{ label: '消息管理' }}
       />
       <Resource
         name="audit-logs"

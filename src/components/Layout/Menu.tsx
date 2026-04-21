@@ -97,6 +97,15 @@ export const Menu = () => {
           leftIcon={<span>💬</span>}
         />
       )}
+
+      {/* 消息管理 */}
+      {canAccessResource(permissions, 'messages', userRole) && (
+        <RAdminMenu.Item
+          to="/messages"
+          primaryText="消息管理"
+          leftIcon={<span>📨</span>}
+        />
+      )}
       
       {/* 操作日志 */}
       {canAccessResource(permissions, 'audit-logs', userRole) && (

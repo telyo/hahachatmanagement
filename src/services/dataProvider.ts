@@ -150,6 +150,7 @@ function ensureIdField(item: any, resource?: string): any {
   // 根据资源类型和常见字段名映射 id
   // 注意：对于 orders 资源，优先使用 orderId，而不是 planId
   const idValue = item.id || 
+                  (resource === 'feedback' ? item.feedbackId : null) ||
                   (resource === 'orders' ? item.orderId : null) ||
                   (resource === 'ai-models' ? item.modelId : null) ||
                   (resource === 'audit-logs' ? item.logId : null) ||
@@ -180,6 +181,7 @@ const resourceMap: Record<string, string> = {
   'ai-models': 'ai/models',
   'ai-usage': 'ai/usage', // AI 使用记录
   feedback: 'feedback',
+  messages: 'messages',
   'audit-logs': 'audit-logs',
   'api-logger': 'api-logger/config', // API 日志配置使用特殊路径
   admins: 'admins',

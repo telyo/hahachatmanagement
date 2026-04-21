@@ -111,6 +111,7 @@ export const RESOURCE_PERMISSIONS: Record<string, string[]> = {
   'ai-models': ['ai_models:read'],
   'ai-usage': ['ai_usage:read'],
   feedback: ['feedback:read'],
+  messages: ['feedback:read'],
   'audit-logs': ['audit_logs:read'],
   'api-logger': ['api_logger:read'],
   admins: ['admins:read'],
