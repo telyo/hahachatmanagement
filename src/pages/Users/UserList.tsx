@@ -36,7 +36,7 @@ export const UserList = () => {
 
   return (
     <List filters={<UserFilter />}>
-        <Datagrid rowClick="show">
+        <Datagrid rowClick="show" bulkActionButtons={false}>
         <TextField source="id" label="用户ID" />
         <EmailField source="email" label="邮箱" />
         <TextField source="phone" label="手机号" />

@@ -1,4 +1,4 @@
-import { Edit, SimpleForm, TextInput, SelectInput, NumberInput, DateInput, useNotify, useRedirect, usePermissions, useRecordContext, useRefresh, useGetOne } from 'react-admin';
+import { Edit, SimpleForm, TextInput, SelectInput, NumberInput, DateInput, useNotify, useRedirect, usePermissions, useRecordContext, useRefresh, useGetOne, TopToolbar, ListButton, ShowButton, Toolbar, SaveButton } from 'react-admin';
 import { useParams } from 'react-router-dom';
 import { Alert, Typography, Divider, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Box, Table, TableBody, TableCell, TableHead, TableRow, IconButton, Collapse, Paper } from '@mui/material';
 import { hasPermission } from '../../utils/permissions';
@@ -417,6 +417,21 @@ const EditCreditsDetails = ({ credits, userId, onSuccess }: { credits: any[]; us
   );
 };
 
+/** 不包含删除：用户不允许从后台删除 */
+const UserEditToolbar = () => (
+  <TopToolbar>
+    <ListButton />
+    <ShowButton />
+  </TopToolbar>
+);
+
+/** SimpleForm 默认右下角工具栏含「删除」；仅保留保存 */
+const UserEditFormToolbar = () => (
+  <Toolbar>
+    <SaveButton />
+  </Toolbar>
+);
+
 const UserEdit = () => {
   const notify = useNotify();
   const redirect = useRedirect();
@@ -533,8 +548,8 @@ const UserEdit = () => {
 
   if (!canWrite) {
     return (
-      <Edit>
-        <SimpleForm>
+      <Edit actions={<UserEditToolbar />}>
+        <SimpleForm toolbar={false}>
           <Alert severity="warning" sx={{ m: 2 }}>
             您没有编辑用户的权限。如需使用，请联系超级管理员。
           </Alert>
@@ -560,8 +575,8 @@ const UserEdit = () => {
   // 如果正在加载，显示加载状态
   if (isLoading && !displayRecord) {
     return (
-      <Edit>
-        <SimpleForm>
+      <Edit actions={<UserEditToolbar />}>
+        <SimpleForm toolbar={false}>
           <Alert severity="info">正在加载用户数据...</Alert>
         </SimpleForm>
       </Edit>
@@ -570,8 +585,8 @@ const UserEdit = () => {
 
   return (
     <>
-      <Edit>
-        <SimpleForm onSubmit={handleSave}>
+      <Edit actions={<UserEditToolbar />}>
+        <SimpleForm toolbar={<UserEditFormToolbar />} onSubmit={handleSave}>
           <TextInput source="id" disabled label="用户ID" />
           <TextInput source="email" disabled label="邮箱" />
           <SelectInput

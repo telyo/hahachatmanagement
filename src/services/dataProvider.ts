@@ -151,6 +151,7 @@ function ensureIdField(item: any, resource?: string): any {
   // 注意：对于 orders 资源，优先使用 orderId，而不是 planId
   const idValue = item.id || 
                   (resource === 'feedback' ? item.feedbackId : null) ||
+                  (resource === 'messages' ? item.messageId : null) ||
                   (resource === 'orders' ? item.orderId : null) ||
                   (resource === 'ai-models' ? item.modelId : null) ||
                   (resource === 'audit-logs' ? item.logId : null) ||
@@ -163,7 +164,8 @@ function ensureIdField(item: any, resource?: string): any {
                   item.adminId ||
                   item.subscriptionId ||
                   item.logId ||
-                  item.providerId;
+                  item.providerId ||
+                  item.messageId;
   
   if (idValue) {
     return { ...item, id: idValue };
@@ -782,6 +784,9 @@ export const dataProvider: DataProvider = {
     if (resource === 'audit-logs') {
       throw new Error('操作日志不允许删除');
     }
+    if (resource === 'users') {
+      throw new Error('用户不允许通过后台删除，请使用状态调整等业务操作');
+    }
     const apiPath = resourceMap[resource] || resource;
     // AI 模型使用 apiClient 确保请求正确发送
     if (resource === 'ai-models') {
@@ -797,6 +802,9 @@ export const dataProvider: DataProvider = {
     // 操作日志通常不应该被删除，禁用删除功能
     if (resource === 'audit-logs') {
       throw new Error('操作日志不允许删除');
+    }
+    if (resource === 'users') {
+      throw new Error('用户不允许通过后台删除，请使用状态调整等业务操作');
     }
     const apiPath = resourceMap[resource] || resource;
     // AI 模型等使用 apiClient 确保请求正确发送（含签名、Token）

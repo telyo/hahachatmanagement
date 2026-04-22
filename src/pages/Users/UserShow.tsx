@@ -11,12 +11,11 @@ import {
   FunctionField,
 } from 'react-admin';
 import { formatUtils } from '../../utils/format';
-import { useEffect, useState, useCallback } from 'react';
-import { useRecordContext, useGetOne, useRefresh } from 'react-admin';
+import { useEffect, useState } from 'react';
+import { useRecordContext, useGetOne } from 'react-admin';
 import { useParams } from 'react-router-dom';
 import apiClient from '../../services/api';
-import { Box, Table, TableBody, TableCell, TableHead, TableRow, IconButton, CircularProgress, Alert, Typography, TextField as MuiTextField, Button, Paper, Chip, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
-import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+import { Box, Table, TableBody, TableCell, TableHead, TableRow, IconButton, CircularProgress, Alert, Typography, TextField as MuiTextField, Button, Paper, Chip } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -116,9 +115,6 @@ export const UserShow = () => {
           />
           <DateField source="createdAt" label="注册时间" showTime />
           <DateField source="updatedAt" label="更新时间" showTime />
-          {displayRecord?.status === 'pending_deletion' && (
-            <ForceDeleteButton userId={userId} />
-          )}
         </SimpleShowLayout>
       </Tab>
       <Tab label="订阅信息">
@@ -174,55 +170,6 @@ export const UserShow = () => {
       </Tab>
     </TabbedShowLayout>
     </Show>
-  );
-};
-
-// 强制删除用户按钮
-const ForceDeleteButton = ({ userId }: { userId: string }) => {
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const refresh = useRefresh();
-
-  const handleDelete = useCallback(async () => {
-    setLoading(true);
-    try {
-      await apiClient.delete(`/admin/users/${userId}/force-delete`);
-      setOpen(false);
-      alert('用户已删除，通知邮件已发送');
-      refresh();
-    } catch (error: any) {
-      console.error('Force delete failed:', error);
-      alert('删除失败: ' + (error?.response?.data?.message || error.message));
-    } finally {
-      setLoading(false);
-    }
-  }, [userId, refresh]);
-
-  return (
-    <Box sx={{ mt: 2 }}>
-      <Button
-        variant="contained"
-        color="error"
-        startIcon={<DeleteForeverIcon />}
-        onClick={() => setOpen(true)}
-      >
-        立即删除该用户
-      </Button>
-      <Dialog open={open} onClose={() => setOpen(false)}>
-        <DialogTitle>确认删除用户</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            此操作将立即永久删除该用户账号，并向用户发送删除通知邮件。此操作不可撤销。
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpen(false)} disabled={loading}>取消</Button>
-          <Button onClick={handleDelete} color="error" variant="contained" disabled={loading}>
-            {loading ? '删除中...' : '确认删除'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
   );
 };
 
