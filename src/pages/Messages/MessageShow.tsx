@@ -36,6 +36,16 @@ export const MessageShow = () => (
         }}
       />
       <TextField source="targetType" label="发送范围" />
+      <FunctionField
+        label="未读可见天数"
+        render={(record: any) => {
+          const d = record?.unreadExpireDays;
+          if (d != null && d !== '' && Number(d) > 0) {
+            return String(d);
+          }
+          return '—（旧数据；用户侧未读按收件创建时间 +7 天兜底）';
+        }}
+      />
       <NumberField source="targetCount" label="命中人数" />
       <TextField source="status" label="状态" />
       <TextField source="imageUrl" label="图片链接" />

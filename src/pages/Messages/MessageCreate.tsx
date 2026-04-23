@@ -64,6 +64,11 @@ const transformPayload = (data: any) => {
     };
   }
 
+  const unreadDays = Number(data.unreadExpireDays);
+  if (!Number.isNaN(unreadDays) && unreadDays >= 1 && unreadDays <= 365) {
+    payload.unreadExpireDays = Math.trunc(unreadDays);
+  }
+
   return payload;
 };
 
@@ -437,6 +442,22 @@ export const MessageCreate = () => (
           );
         }}
       </FormDataConsumer>
+
+      <Divider sx={{ my: 2 }} />
+      <Typography variant="subtitle2" sx={{ mb: 1 }}>
+        未读过期
+      </Typography>
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+        仅未读消息在到达期限后对用户隐藏；用户打开后（已读）将一直保留，直至用户或后台删除。不传时服务端默认 7 天。
+      </Typography>
+      <NumberInput
+        source="unreadExpireDays"
+        label="未读可见天数"
+        defaultValue={7}
+        min={1}
+        max={365}
+        helperText="1–365，默认 7"
+      />
 
       <Divider sx={{ my: 2 }} />
       <Typography variant="subtitle2" sx={{ mb: 1 }}>
