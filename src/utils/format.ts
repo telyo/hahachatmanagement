@@ -69,3 +69,20 @@ export const formatUtils = {
   },
 };
 
+/** 仪表盘与后端 StatisticsTZ（Asia/Shanghai）对齐的自然日（固定 UTC+8，无夏令时） */
+const SHANGHAI_OFFSET_MS = 8 * 60 * 60 * 1000;
+
+export function shanghaiYMD(d: Date = new Date()): string {
+  return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Shanghai' });
+}
+
+/** 上海时区某日 00:00:00 对应的 Unix 毫秒（month 为 1–12） */
+export function startOfShanghaiCalendarDayMs(y: number, month: number, d: number): number {
+  return Date.UTC(y, month - 1, d, 0, 0, 0, 0) - SHANGHAI_OFFSET_MS;
+}
+
+export function startOfTodayShanghaiMs(now: Date = new Date()): number {
+  const ymd = shanghaiYMD(now);
+  const [y, m, d] = ymd.split('-').map(Number);
+  return startOfShanghaiCalendarDayMs(y, m, d);
+}

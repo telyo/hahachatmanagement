@@ -10,7 +10,7 @@ import {
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
 import { statisticsService } from '../../services/statistics';
 import { Statistics } from '../../types/statistics';
-import { formatUtils } from '../../utils/format';
+import { formatUtils, startOfShanghaiCalendarDayMs, startOfTodayShanghaiMs, shanghaiYMD } from '../../utils/format';
 import { isLoginPage } from '../../utils/routing';
 import { authUtils } from '../../utils/auth';
 import { hasPermission } from '../../utils/permissions';
@@ -41,34 +41,37 @@ export const Dashboard = () => {
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<'today' | '7d' | '30d' | 'custom'>('7d');
   const [startDate, setStartDate] = useState(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 7);
-    return d.toISOString().split('T')[0];
+    const t0 = startOfTodayShanghaiMs();
+    const t = t0 - 7 * 86400000;
+    return shanghaiYMD(new Date(t));
   });
-  const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState(() => shanghaiYMD());
 
   const { startTime, endTime, isTodayRange } = useMemo(() => {
     const end = new Date();
     const endMs = end.getTime();
     let startMs: number;
     if (dateRange === 'today') {
-      startMs = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 0, 0, 0).getTime();
+      startMs = startOfTodayShanghaiMs(end);
       return { startTime: startMs, endTime: endMs, isTodayRange: true };
     } else if (dateRange === '7d') {
-      startMs = endMs - 7 * 24 * 60 * 60 * 1000;
+      const today0 = startOfTodayShanghaiMs(end);
+      startMs = today0 - 6 * 86400000;
       return { startTime: startMs, endTime: endMs, isTodayRange: false };
     } else if (dateRange === '30d') {
-      startMs = endMs - 30 * 24 * 60 * 60 * 1000;
+      const today0 = startOfTodayShanghaiMs(end);
+      startMs = today0 - 29 * 86400000;
       return { startTime: startMs, endTime: endMs, isTodayRange: false };
     } else {
-      const start = new Date(startDate);
-      start.setHours(0, 0, 0, 0);
-      const endD = new Date(endDate);
-      endD.setHours(23, 59, 59, 999);
+      const [sy, sm, sd] = startDate.split('-').map(Number);
+      const [ey, em, ed] = endDate.split('-').map(Number);
+      startMs = startOfShanghaiCalendarDayMs(sy, sm, sd);
+      const endDayStart = startOfShanghaiCalendarDayMs(ey, em, ed);
+      const endDayEndMs = endDayStart + 86400000 - 1;
       const sameDay = startDate === endDate;
       return {
-        startTime: start.getTime(),
-        endTime: endD.getTime(),
+        startTime: startMs,
+        endTime: endDayEndMs,
         isTodayRange: sameDay,
       };
     }
