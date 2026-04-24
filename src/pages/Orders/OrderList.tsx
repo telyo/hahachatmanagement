@@ -36,7 +36,7 @@ const OrderFilter = (props: any) => (
 );
 
 export const OrderList = () => (
-  <List filters={<OrderFilter />}>
+  <List filters={<OrderFilter />} sort={{ field: 'createdAt', order: 'DESC' }}>
     <Datagrid rowClick="show">
       <FunctionField
         label="订单ID"
