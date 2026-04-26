@@ -38,6 +38,7 @@ import { FeedbackList } from './pages/Feedback/FeedbackList';
 import FeedbackShow from './pages/Feedback/FeedbackShow';
 import { MessageList } from './pages/Messages/MessageList';
 import { MessageCreate } from './pages/Messages/MessageCreate';
+import { MessageEdit } from './pages/Messages/MessageEdit';
 import { MessageShow } from './pages/Messages/MessageShow';
 
 // Audit Logs
@@ -177,6 +178,7 @@ function App() {
         list={MessageList}
         show={MessageShow}
         create={MessageCreate}
+        edit={MessageEdit}
         icon={FeedbackIcon}
         options={{ label: '消息管理' }}
       />

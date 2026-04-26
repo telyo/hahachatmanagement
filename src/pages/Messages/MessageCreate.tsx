@@ -341,7 +341,7 @@ function TargetConstraintsFields() {
   );
 }
 
-function ImageUploadField() {
+export function ImageUploadField() {
   const notify = useNotify();
   const { setValue, watch } = useFormContext();
   const [imageUploading, setImageUploading] = useState(false);

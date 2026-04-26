@@ -5,10 +5,18 @@ import {
   NumberField,
   DateField,
   FunctionField,
+  TopToolbar,
+  EditButton,
 } from 'react-admin';
 
+const MessageShowActions = () => (
+  <TopToolbar>
+    <EditButton />
+  </TopToolbar>
+);
+
 export const MessageShow = () => (
-  <Show>
+  <Show actions={<MessageShowActions />}>
     <SimpleShowLayout>
       <TextField source="messageId" label="消息ID" />
       <TextField source="title" label="标题" />

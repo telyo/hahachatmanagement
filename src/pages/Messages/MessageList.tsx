@@ -8,6 +8,7 @@ import {
   TextInput,
   SelectInput,
   ShowButton,
+  EditButton,
 } from 'react-admin';
 
 const MessageFilter = (props: any) => (
@@ -44,6 +45,7 @@ export const MessageList = () => (
       <FunctionField label="命中人数" render={(record: any) => record?.targetCount ?? 0} />
       <TextField source="status" label="状态" />
       <DateField source="createdAt" label="创建时间" showTime />
+      <EditButton />
       <ShowButton />
     </Datagrid>
   </List>
