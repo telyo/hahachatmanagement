@@ -446,6 +446,17 @@ const HahachatProviderEdit = () => {
             </SimpleFormIterator>
           </ArrayInput>
 
+          <TextInput
+            source="imageGenerationRoute"
+            label="图片生成 API 路径"
+            helperText="相对 API 端点。留空=自动；仅 chat 填 chat/completions；标准 OpenAI 填 images/generations"
+          />
+          <TextInput
+            source="imageEditRoute"
+            label="图片编辑 API 路径（带参考图）"
+            helperText="留空=自动；仅 chat 填 chat/completions；标准 OpenAI 填 images/edits"
+          />
+
           <NumberInput source="sortOrder" label="排序" helperText="排序值，数字越小越靠前" />
           <SelectInput
             source="status"

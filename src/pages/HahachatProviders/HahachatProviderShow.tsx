@@ -12,6 +12,8 @@ export const HahachatProviderShow = () => {
             <TextField source="displayName" label="显示名称" />
             <TextField source="description" label="描述" />
             <TextField source="apiEndpoint" label="API 端点" />
+            <TextField source="imageGenerationRoute" label="图片生成 API 路径" emptyText="（自动）" />
+            <TextField source="imageEditRoute" label="图片编辑 API 路径" emptyText="（自动）" />
             <ArrayField source="supportedModels" label="支持的模型">
               <SingleFieldList>
                 <ChipField source="id" />

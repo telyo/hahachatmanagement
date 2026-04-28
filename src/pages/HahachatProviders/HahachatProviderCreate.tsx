@@ -65,6 +65,16 @@ const ConditionalApiFields = ({ isHahachat }: { isHahachat: boolean }) => {
           <TextInput source="" label="模型ID" helperText="该提供商支持的 AI 模型ID（用于内部判断，不用于显示）" fullWidth />
         </SimpleFormIterator>
       </ArrayInput>
+      <TextInput
+        source="imageGenerationRoute"
+        label="图片生成 API 路径"
+        helperText="相对上面 API 端点，勿前导 /。留空=自动尝试 images/generations 再回退 chat；仅提供 chat 的网关填 chat/completions"
+      />
+      <TextInput
+        source="imageEditRoute"
+        label="图片编辑 API 路径（带参考图）"
+        helperText="留空=自动尝试 images/edits；仅用聊天接口改图时填 chat/completions"
+      />
     </>
   );
 };
