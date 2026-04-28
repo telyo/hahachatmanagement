@@ -43,6 +43,7 @@ export const MessageList = () => (
       <TextField source="messageType" label="类型" />
       <TextField source="targetType" label="范围" />
       <FunctionField label="命中人数" render={(record: any) => record?.targetCount ?? 0} />
+      <FunctionField label="阅读数" render={(record: any) => record?.readCount ?? 0} />
       <TextField source="status" label="状态" />
       <DateField source="createdAt" label="创建时间" showTime />
       <EditButton />

@@ -11,11 +11,16 @@ const transformUpdate = (data: any) => {
   };
 
   if (data.giftEnabled) {
-    base.giftPayload = {
+    const giftPayload: Record<string, unknown> = {
       giftType: data.giftType || 'welfare',
       credits: Number(data.giftCredits || 0),
       description: data.giftDescription || '',
     };
+    const giftCreditDays = Number(data.giftCreditExpireDays);
+    if (!Number.isNaN(giftCreditDays) && giftCreditDays >= 1 && giftCreditDays <= 365) {
+      giftPayload.creditExpireDays = Math.trunc(giftCreditDays);
+    }
+    base.giftPayload = giftPayload;
   } else {
     base.giftPayload = null;
   }
@@ -42,6 +47,8 @@ function buildEditDefaults(record: any) {
     giftEnabled: record.messageType === 'gift' || Boolean(gift),
     giftType: gift?.giftType || gift?.GiftType || 'welfare',
     giftCredits: gift?.credits ?? gift?.Credits,
+    giftCreditExpireDays:
+      gift?.creditExpireDays ?? gift?.CreditExpireDays ?? 7,
     giftDescription: gift?.description ?? gift?.Description ?? '',
     unreadExpireDays: record.unreadExpireDays ?? 7,
   };
@@ -107,6 +114,13 @@ const MessageEditForm = () => {
                 {...rest}
               />
               <NumberInput source="giftCredits" label="礼包积分" min={1} />
+              <NumberInput
+                source="giftCreditExpireDays"
+                label="积分有效天数（领取后起算）"
+                min={1}
+                max={365}
+                helperText="1–365，默认 7"
+              />
               <TextInput source="giftDescription" label="礼包说明" fullWidth />
             </Box>
           ) : null

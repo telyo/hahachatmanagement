@@ -33,10 +33,16 @@ export const MessageShow = () => (
           const desc = (g.description ?? g.Description ?? '') as string;
           const giftId = (g.giftId ?? g.GiftID ?? '') as string;
           const giftType = (g.giftType ?? g.GiftType ?? '') as string;
+          const creditDays = g.creditExpireDays ?? g.CreditExpireDays;
+          const daysLine =
+            creditDays != null && creditDays !== '' && Number(creditDays) > 0
+              ? `积分有效天数：${creditDays}（领取后起算）\n`
+              : '积分有效天数：7（默认）\n';
           return (
             <span style={{ whiteSpace: 'pre-wrap' }}>
               {giftId ? `礼包ID：${giftId}\n` : ''}
               {giftType ? `类型：${giftType}\n` : ''}
+              {daysLine}
               {`积分：${credits ?? '—'}\n`}
               {`说明：${desc.trim() ? desc : '—'}`}
             </span>
@@ -55,6 +61,7 @@ export const MessageShow = () => (
         }}
       />
       <NumberField source="targetCount" label="命中人数" />
+      <NumberField source="readCount" label="阅读数" />
       <TextField source="status" label="状态" />
       <TextField source="imageUrl" label="图片链接" />
       <DateField source="sendAt" label="发送时间" showTime />

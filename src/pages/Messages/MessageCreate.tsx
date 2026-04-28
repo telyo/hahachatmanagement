@@ -57,11 +57,16 @@ const transformPayload = (data: any) => {
   }
 
   if (data.giftEnabled) {
-    payload.giftPayload = {
+    const giftPayload: Record<string, unknown> = {
       giftType: data.giftType || 'welfare',
       credits: Number(data.giftCredits || 0),
       description: data.giftDescription || '',
     };
+    const giftCreditDays = Number(data.giftCreditExpireDays);
+    if (!Number.isNaN(giftCreditDays) && giftCreditDays >= 1 && giftCreditDays <= 365) {
+      giftPayload.creditExpireDays = Math.trunc(giftCreditDays);
+    }
+    payload.giftPayload = giftPayload;
   }
 
   const unreadDays = Number(data.unreadExpireDays);
@@ -479,6 +484,14 @@ export const MessageCreate = () => (
                 {...rest}
               />
               <NumberInput source="giftCredits" label="礼包积分" />
+              <NumberInput
+                source="giftCreditExpireDays"
+                label="积分有效天数（领取后起算）"
+                defaultValue={7}
+                min={1}
+                max={365}
+                helperText="1–365，默认 7；对应到账积分的过期时间"
+              />
               <TextInput source="giftDescription" label="礼包说明" fullWidth />
             </Box>
           ) : null
