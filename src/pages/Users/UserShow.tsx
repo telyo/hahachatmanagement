@@ -115,6 +115,10 @@ export const UserShow = () => {
           />
           <DateField source="createdAt" label="注册时间" showTime />
           <DateField source="updatedAt" label="更新时间" showTime />
+          <FunctionField
+            label="首次登录平台"
+            render={() => formatUtils.firstLoginPlatform(displayRecord?.firstLoginPlatform)}
+          />
         </SimpleShowLayout>
       </Tab>
       <Tab label="订阅信息">

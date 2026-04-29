@@ -67,6 +67,18 @@ export const formatUtils = {
     };
     return statusMap[status] || String(status);
   },
+
+  /** 后端 firstLoginPlatform：win / mac / ios / android */
+  firstLoginPlatform: (platform: string | null | undefined): string => {
+    if (!platform) return '未记录';
+    const map: Record<string, string> = {
+      win: 'Windows',
+      mac: 'macOS',
+      ios: 'iOS',
+      android: 'Android',
+    };
+    return map[platform.toLowerCase()] || String(platform);
+  },
 };
 
 /** 仪表盘与后端 StatisticsTZ（Asia/Shanghai）对齐的自然日（固定 UTC+8，无夏令时） */

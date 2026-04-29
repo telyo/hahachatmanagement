@@ -19,6 +19,8 @@ export interface User {
     endDate?: string;
     expiresAt?: string; // 兼容旧字段
   };
+  /** 首次登录平台：win | mac | ios | android */
+  firstLoginPlatform?: string;
 }
 
 export interface UserListResponse {

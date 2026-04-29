@@ -67,6 +67,10 @@ export const UserList = () => {
             return formatRenewalStatus(record?.subscription?.renewalStatus);
           }}
         />
+        <FunctionField
+          label="首次登录平台"
+          render={(record: any) => formatUtils.firstLoginPlatform(record?.firstLoginPlatform)}
+        />
         <DateField source="createdAt" label="注册时间" showTime />
         <ShowButton />
         {canWrite && <EditButton />}
