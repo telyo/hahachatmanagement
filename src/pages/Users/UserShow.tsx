@@ -3,7 +3,6 @@ import {
   SimpleShowLayout,
   TextField,
   EmailField,
-  DateField,
   NumberField,
   ReferenceField,
   TabbedShowLayout,
@@ -84,7 +83,7 @@ export const UserShow = () => {
                     <Chip label="待删除" color="error" size="small" />
                     {scheduledAt && (
                       <Typography variant="body2" color="error">
-                        计划删除时间：{new Date(scheduledAt).toLocaleString('zh-CN')}
+                        计划删除时间：{formatUtils.dateBeijing(scheduledAt)}
                       </Typography>
                     )}
                   </Box>
@@ -113,8 +112,14 @@ export const UserShow = () => {
               return totalBalance.toLocaleString();
             }}
           />
-          <DateField source="createdAt" label="注册时间" showTime />
-          <DateField source="updatedAt" label="更新时间" showTime />
+          <FunctionField
+            label="注册时间"
+            render={() => formatUtils.dateBeijing(displayRecord?.createdAt)}
+          />
+          <FunctionField
+            label="更新时间"
+            render={() => formatUtils.dateBeijing(displayRecord?.updatedAt)}
+          />
           <FunctionField
             label="首次登录平台"
             render={() => formatUtils.firstLoginPlatform(displayRecord?.firstLoginPlatform)}
@@ -146,7 +151,7 @@ export const UserShow = () => {
             render={() => {
               if (!displayRecord?.subscription?.endDate) return '未设置';
               try {
-                return new Date(displayRecord.subscription.endDate).toLocaleString('zh-CN');
+                return formatUtils.dateBeijing(displayRecord.subscription.endDate);
               } catch {
                 return displayRecord.subscription.endDate;
               }
@@ -161,7 +166,7 @@ export const UserShow = () => {
             render={() => {
               if (!displayRecord?.subscription?.nextBillingAt) return '未设置';
               try {
-                return new Date(displayRecord.subscription.nextBillingAt).toLocaleString('zh-CN');
+                return formatUtils.dateBeijing(displayRecord.subscription.nextBillingAt);
               } catch {
                 return displayRecord.subscription.nextBillingAt;
               }
@@ -443,7 +448,7 @@ const CreditsDetailsTab = ({ userId }: { userId: string }) => {
                       <TableCell sx={{ fontSize: '12px' }}>{credit.source || '-'}</TableCell>
                       <TableCell sx={{ fontSize: '12px' }}>
                         {expiresAt 
-                          ? expiresAt.toLocaleString('zh-CN')
+                          ? formatUtils.dateBeijing(credit.expiresAt)
                           : '永不过期'}
                       </TableCell>
                       <TableCell>
@@ -457,7 +462,7 @@ const CreditsDetailsTab = ({ userId }: { userId: string }) => {
                       </TableCell>
                       <TableCell sx={{ fontSize: '12px' }}>
                         {credit.createdAt 
-                          ? new Date(credit.createdAt).toLocaleString('zh-CN')
+                          ? formatUtils.dateBeijing(credit.createdAt)
                           : '-'}
                       </TableCell>
                     </TableRow>

@@ -1,6 +1,34 @@
 import { format, formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 
+/** 固定时区格式化为 yyyy-MM-dd HH:mm:ss（用于后台统一展示，默认东八区） */
+function formatZonedDateTime(
+  date: string | Date,
+  timeZone: string = 'Asia/Shanghai',
+  locale: string = 'zh-CN'
+): string {
+  if (!date) return '-';
+  const d = new Date(date);
+  if (Number.isNaN(d.getTime())) return '-';
+
+  const parts = new Intl.DateTimeFormat(locale, {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).formatToParts(d);
+
+  const map: Record<string, string> = {};
+  for (const p of parts) {
+    if (p.type !== 'literal') map[p.type] = p.value;
+  }
+  return `${map.year}-${map.month}-${map.day} ${map.hour}:${map.minute}:${map.second}`;
+}
+
 export const formatUtils = {
   date: (date: string | Date, pattern: string = 'yyyy-MM-dd HH:mm:ss'): string => {
     if (!date) return '-';
@@ -12,26 +40,13 @@ export const formatUtils = {
     timeZone: string = 'Asia/Shanghai',
     locale: string = 'zh-CN'
   ): string => {
-    if (!date) return '-';
-    const d = new Date(date);
-    if (Number.isNaN(d.getTime())) return '-';
+    return formatZonedDateTime(date, timeZone, locale);
+  },
 
-    const parts = new Intl.DateTimeFormat(locale, {
-      timeZone,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false,
-    }).formatToParts(d);
-
-    const map: Record<string, string> = {};
-    for (const p of parts) {
-      if (p.type !== 'literal') map[p.type] = p.value;
-    }
-    return `${map.year}-${map.month}-${map.day} ${map.hour}:${map.minute}:${map.second}`;
+  /** 北京时间（Asia/Shanghai），与用户管理等后台列表一致 */
+  dateBeijing: (date: string | Date | null | undefined): string => {
+    if (date == null || date === '') return '-';
+    return formatZonedDateTime(date);
   },
 
   relativeTime: (date: string | Date): string => {

@@ -1,4 +1,4 @@
-import { List, Datagrid, TextField, EmailField, DateField, EditButton, ShowButton, Filter, TextInput, SelectInput, usePermissions, FunctionField } from 'react-admin';
+import { List, Datagrid, TextField, EmailField, EditButton, ShowButton, Filter, TextInput, SelectInput, usePermissions, FunctionField } from 'react-admin';
 import { formatUtils } from '../../utils/format';
 import { hasPermission } from '../../utils/permissions';
 import { authUtils } from '../../utils/auth';
@@ -55,7 +55,7 @@ export const UserList = () => {
               return '未订阅';
             }
             try {
-              return new Date(endDate).toLocaleString('zh-CN');
+              return formatUtils.dateBeijing(endDate);
             } catch (e) {
               return String(endDate);
             }
@@ -71,7 +71,10 @@ export const UserList = () => {
           label="首次登录平台"
           render={(record: any) => formatUtils.firstLoginPlatform(record?.firstLoginPlatform)}
         />
-        <DateField source="createdAt" label="注册时间" showTime />
+        <FunctionField
+          label="注册时间"
+          render={(record: any) => formatUtils.dateBeijing(record?.createdAt)}
+        />
         <ShowButton />
         {canWrite && <EditButton />}
       </Datagrid>
